@@ -68,6 +68,9 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	private final Queue<CampaignReport> campaignReports;
 	private PublisherCatalog publisherCatalog;
+	
+	private HashMap<String, PublisherData> publishers;
+	
 	private InitialCampaignMessage initialCampaignMessage;
 	private AdNetworkDailyNotification adNetworkDailyNotification;
 
@@ -116,7 +119,7 @@ public class ArgentAdNetwork extends Agent {
 	private int day;
 	private String[] publisherNames;
 	private CampaignData currCampaign;
-
+	
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
 	}
@@ -212,8 +215,7 @@ public class ArgentAdNetwork extends Agent {
 
 		CampaignData campaignData = new CampaignData(initialCampaignMessage);
 		campaignData.setBudget(initialCampaignMessage.getBudgetMillis()/1000.0);
-		currCampaign = campaignData;
-		genCampaignQueries(currCampaign);
+		genCampaignQueries(campaignData);
 
 		/*
 		 * The initial campaign is already allocated to our agent so we add it
@@ -288,12 +290,12 @@ public class ArgentAdNetwork extends Agent {
 				+ notificationMessage.getWinner();
 
 		if ((pendingCampaign.id == adNetworkDailyNotification.getCampaignId())
-				&& (notificationMessage.getCostMillis() != 0)) {
+				&& (notificationMessage.getCostMillis() != 0)) { //cost!=0 only if we won it ?
 
 			/* add campaign to list of won campaigns */
 			pendingCampaign.setBudget(notificationMessage.getCostMillis()/1000.0);
-			currCampaign = pendingCampaign;
-			genCampaignQueries(currCampaign);
+			
+			genCampaignQueries(pendingCampaign);
 			myCampaigns.put(pendingCampaign.id, pendingCampaign);
 
 			campaignAllocatedTo = " WON at cost (Millis)"
@@ -339,8 +341,9 @@ public class ArgentAdNetwork extends Agent {
 		 * revenue per imp
 		 */
 
-		double rbid = 10.0*random.nextDouble();
-
+		//double rbid = 10.0*random.nextDouble();
+		double bid; 
+		
 		/*
 		 * add bid entries w.r.t. each active campaign with remaining contracted
 		 * impressions.
@@ -348,49 +351,59 @@ public class ArgentAdNetwork extends Agent {
 		 * for now, a single entry per active campaign is added for queries of
 		 * matching target segment.
 		 */
-
-		if ((dayBiddingFor >= currCampaign.dayStart)
-				&& (dayBiddingFor <= currCampaign.dayEnd)
-				&& (currCampaign.impsTogo() > 0)) {
-
-			int entCount = 0;
-
-			for (AdxQuery query : currCampaign.campaignQueries) {
-				if (currCampaign.impsTogo() - entCount > 0) {
-					/*
-					 * among matching entries with the same campaign id, the AdX
-					 * randomly chooses an entry according to the designated
-					 * weight. by setting a constant weight 1, we create a
-					 * uniform probability over active campaigns(irrelevant because we are bidding only on one campaign)
-					 */
-					if (query.getDevice() == Device.pc) {
-						if (query.getAdType() == AdType.text) {
-							entCount++;
+		for(CampaignData  camp: myCampaigns.values()){
+			if ((dayBiddingFor >= camp.dayStart)
+					&& (dayBiddingFor <= camp.dayEnd)
+					&& (camp.impsTogo() > 0)) {
+	//TODO: suppr impsToGo ? because more impressions is best? or put impsToGo*1.1?
+				int entCount = 0;
+	
+				for (AdxQuery query : camp.campaignQueries) {
+					
+					//if (camp.impsTogo() - entCount > 0) {
+						/*
+						 * among matching entries with the same campaign id, the AdX
+						 * randomly chooses an entry according to the designated
+						 * weight. by setting a constant weight 1, we create a
+						 * uniform probability over active campaigns
+						 * (irrelevant because we are bidding only on one campaign)
+						 */
+						if (query.getDevice() == Device.pc) {
+							if (query.getAdType() == AdType.text) {
+								entCount++;
+							} else {
+								entCount += currCampaign.videoCoef;
+							}
 						} else {
-							entCount += currCampaign.videoCoef;
+							if (query.getAdType() == AdType.text) {
+								entCount+=currCampaign.mobileCoef;
+							} else {
+								entCount += currCampaign.videoCoef + currCampaign.mobileCoef;
+							}
+	
 						}
-					} else {
-						if (query.getAdType() == AdType.text) {
-							entCount+=currCampaign.mobileCoef;
-						} else {
-							entCount += currCampaign.videoCoef + currCampaign.mobileCoef;
+						double maxBid = camp.budget;
+						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
+						double minBid = publisher.getReservePriceBaseline();
+						
+						if(maxBid > minBid){ //We only bid if it worths it ?
+							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
+							bid = random.nextDouble()*(maxBid-minBid)+minBid;
+							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
+							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
 						}
-
-					}
-					bidBundle.addQuery(query, rbid, new Ad(null),
-							currCampaign.id, 1);
+					//}
 				}
+	
+				double impressionLimit = currCampaign.impsTogo();
+				double budgetLimit = currCampaign.budget;
+				bidBundle.setCampaignDailyLimit(currCampaign.id,
+						(int) impressionLimit, budgetLimit);
+	
+				System.out.println("Day " + day + ": Updated " + entCount
+						+ " Bid Bundle entries for Campaign id " + currCampaign.id);
 			}
-
-			double impressionLimit = currCampaign.impsTogo();
-			double budgetLimit = currCampaign.budget;
-			bidBundle.setCampaignDailyLimit(currCampaign.id,
-					(int) impressionLimit, budgetLimit);
-
-			System.out.println("Day " + day + ": Updated " + entCount
-					+ " Bid Bundle entries for Campaign id " + currCampaign.id);
 		}
-
 		if (bidBundle != null) {
 			System.out.println("Day " + day + ": Sending BidBundle");
 			sendMessage(adxAgentAddress, bidBundle);
@@ -425,11 +438,23 @@ public class ArgentAdNetwork extends Agent {
 	 * Users and Publishers statistics: popularity and ad type orientation
 	 */
 	private void handleAdxPublisherReport(AdxPublisherReport adxPublisherReport) {
+		
 		System.out.println("Publishers Report: ");
 		for (PublisherCatalogEntry publisherKey : adxPublisherReport.keys()) {
 			AdxPublisherReportEntry entry = adxPublisherReport
 					.getEntry(publisherKey);
 			System.out.println(entry.toString());
+			
+		}
+		
+		for( PublisherCatalogEntry  publisherKey: publisherCatalog.getPublishers()){
+			AdxPublisherReportEntry entry = adxPublisherReport.getEntry(publisherKey);
+			
+			PublisherData publisher = publishers.get(entry.getPublisherName());
+			
+			publisher.setPopularity(entry.getPopularity());			
+			publisher.setAdTypeOrientation(entry.getAdTypeOrientation());
+			publisher.setReservePriceBaseline(entry.getReservePriceBaseline());
 		}
 	}
 
