@@ -1,0 +1,6 @@
+adx-agent/.project
+adx-agent/bin/
+adx-agent/config/
+adx-agent/lib/
+adx-agent/logs/
+adx-server/
