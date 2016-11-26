@@ -112,6 +112,11 @@ public class ArgentAdNetwork extends Agent {
 	 * The targeted service level for the user classification service
 	 */
 	private double ucsTargetLevel;
+	
+	/*
+	 * The current quality rating
+	 */
+	private double qualityRating;
 
 	/*
 	 * current day of simulation
@@ -301,11 +306,14 @@ public class ArgentAdNetwork extends Agent {
 			campaignAllocatedTo = " WON at cost (Millis)"
 					+ notificationMessage.getCostMillis();
 		}
-
+		
+		// save the new qR to calculate effective bid 
+		qualityRating = notificationMessage.getQualityScore();
+		
 		System.out.println("Day " + day + ": " + campaignAllocatedTo
 				+ ". UCS Level set to " + notificationMessage.getServiceLevel()
 				+ " at price " + notificationMessage.getPrice()
-				+ " Quality Score is: " + notificationMessage.getQualityScore());
+				+ " Quality Score is: " + qualityRating);
 	}
 
 	/**
