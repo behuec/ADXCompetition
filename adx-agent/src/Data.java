@@ -43,13 +43,11 @@ public class Data {
 	
 		
 		public enum Age {
-			age18_24, age25_34, age45_54 , age55_64, age65_plus
+			age18_24, age25_34, age35_44, age45_54 , age55_64, age65_plus
 		}
 		public enum Income {
 			income0_30, income30_60, income60_100, income100_plus
 		}
-		
-		//TODO: put all table 3 (info on publishers)
 		
 		
 }

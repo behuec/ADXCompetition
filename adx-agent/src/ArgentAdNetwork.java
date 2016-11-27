@@ -152,7 +152,7 @@ public class ArgentAdNetwork extends Agent {
 			} else if (content instanceof BankStatus) {
 				handleBankStatus((BankStatus) content);
 			} else if(content instanceof CampaignAuctionReport) {
-				hadnleCampaignAuctionReport((CampaignAuctionReport) content);
+				handleCampaignAuctionReport((CampaignAuctionReport) content);
 			} else if (content instanceof ReservePriceInfo) {
 				// ((ReservePriceInfo)content).getReservePriceType();
 			} else {
@@ -166,7 +166,7 @@ public class ArgentAdNetwork extends Agent {
 		}
 	}
 
-	private void hadnleCampaignAuctionReport(CampaignAuctionReport content) {
+	private void handleCampaignAuctionReport(CampaignAuctionReport content) {
 		// ingoring - this message is obsolete
 	}
 
@@ -193,9 +193,24 @@ public class ArgentAdNetwork extends Agent {
 		this.publisherCatalog = publisherCatalog;
 		generateAdxQuerySpace();
 		getPublishersNames();
-
+		this.publishers=new HashMap<>();
+		
+		for( PublisherCatalogEntry  publisherKey: publisherCatalog.getPublishers()){
+			String name = publisherKey.getPublisherName();
+			System.out.println("Add "+name+" to publishers");
+			PublisherData publisher=new PublisherData(name);
+			/*if(publisher==null){
+				System.out.println("publisher null!?");
+			}else{
+				System.out.println("publisher popularity = "+publisher.getPopularity());
+			}
+			System.out.println("publisher created : "+publisher);*/
+			publishers.put(name, publisher );
+			
+		}
+		System.out.println("Publishers initialised : "+publishers);
 	}
-
+	
 	/**
 	 * On day 0, a campaign (the "initial campaign") is allocated to each
 	 * competing agent. The campaign starts on day 1. The address of the
@@ -215,7 +230,8 @@ public class ArgentAdNetwork extends Agent {
 
 		CampaignData campaignData = new CampaignData(initialCampaignMessage);
 		campaignData.setBudget(initialCampaignMessage.getBudgetMillis()/1000.0);
-		genCampaignQueries(campaignData);
+		currCampaign = campaignData;
+		genCampaignQueries(currCampaign);
 
 		/*
 		 * The initial campaign is already allocated to our agent so we add it
@@ -293,9 +309,10 @@ public class ArgentAdNetwork extends Agent {
 				&& (notificationMessage.getCostMillis() != 0)) { //cost!=0 only if we won it ?
 
 			/* add campaign to list of won campaigns */
+			System.out.println("Campaign won, notificationMessage.getCostMillis()="+notificationMessage.getCostMillis());
 			pendingCampaign.setBudget(notificationMessage.getCostMillis()/1000.0);
-			
-			genCampaignQueries(pendingCampaign);
+			currCampaign = pendingCampaign;
+			genCampaignQueries(currCampaign);
 			myCampaigns.put(pendingCampaign.id, pendingCampaign);
 
 			campaignAllocatedTo = " WON at cost (Millis)"
@@ -324,12 +341,7 @@ public class ArgentAdNetwork extends Agent {
 	 * 
 	 */
 	protected void sendBidAndAds() {
-
 		bidBundle = new AdxBidBundle();
-
-		/*
-		 * 
-		 */
 
 		int dayBiddingFor = day + 1;
 
@@ -340,8 +352,6 @@ public class ArgentAdNetwork extends Agent {
 		 * Note: bidding per 1000 imps (CPM) - no more than average budget
 		 * revenue per imp
 		 */
-
-		//double rbid = 10.0*random.nextDouble();
 		double bid; 
 		
 		/*
@@ -352,14 +362,14 @@ public class ArgentAdNetwork extends Agent {
 		 * matching target segment.
 		 */
 		for(CampaignData  camp: myCampaigns.values()){
+			System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
 			if ((dayBiddingFor >= camp.dayStart)
 					&& (dayBiddingFor <= camp.dayEnd)
 					&& (camp.impsTogo() > 0)) {
 	//TODO: suppr impsToGo ? because more impressions is best? or put impsToGo*1.1?
 				int entCount = 0;
-	
 				for (AdxQuery query : camp.campaignQueries) {
-					
+					//System.out.println("query = "+query);
 					//if (camp.impsTogo() - entCount > 0) {
 						/*
 						 * among matching entries with the same campaign id, the AdX
@@ -368,40 +378,42 @@ public class ArgentAdNetwork extends Agent {
 						 * uniform probability over active campaigns
 						 * (irrelevant because we are bidding only on one campaign)
 						 */
-						if (query.getDevice() == Device.pc) {
+						/*if (query.getDevice() == Device.pc) {
 							if (query.getAdType() == AdType.text) {
 								entCount++;
 							} else {
-								entCount += currCampaign.videoCoef;
+								entCount += camp.videoCoef;
 							}
 						} else {
 							if (query.getAdType() == AdType.text) {
-								entCount+=currCampaign.mobileCoef;
+								entCount+=camp.mobileCoef;
 							} else {
-								entCount += currCampaign.videoCoef + currCampaign.mobileCoef;
+								entCount += camp.videoCoef + camp.mobileCoef;
 							}
 	
-						}
-						double maxBid = camp.budget;
+						}*/
+						double maxBid = camp.budget-camp.stats.getCost()/camp.impsTogo() ;//bid/1000 if we bid in single impression.
 						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
 						double minBid = publisher.getReservePriceBaseline();
-						
+						//System.out.println("min (publisher reserve price)= "+minBid+" max (camp budget)= "+maxBid);
 						if(maxBid > minBid){ //We only bid if it worths it ?
 							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
 							bid = random.nextDouble()*(maxBid-minBid)+minBid;
+
+							//System.out.println("we bid "+bid);
 							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
 							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
 						}
 					//}
 				}
-	
-				double impressionLimit = currCampaign.impsTogo();
-				double budgetLimit = currCampaign.budget;
-				bidBundle.setCampaignDailyLimit(currCampaign.id,
+				double impressionLimit = camp.impsTogo();
+				//changed:
+				double budgetLimit = camp.budget-camp.stats.getCost();
+				bidBundle.setCampaignDailyLimit(camp.id,
 						(int) impressionLimit, budgetLimit);
 	
 				System.out.println("Day " + day + ": Updated " + entCount
-						+ " Bid Bundle entries for Campaign id " + currCampaign.id);
+						+ " Bid Bundle entries for Campaign id " + camp.id);
 			}
 		}
 		if (bidBundle != null) {
