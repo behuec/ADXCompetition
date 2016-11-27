@@ -243,7 +243,8 @@ public class ArgentAdNetwork extends Agent {
 
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
-
+		Random random = new Random();
+		
 		/*
 		 * The campaign requires com.getReachImps() impressions. The competing
 		 * Ad Networks bid for the total campaign Budget (that is, the ad
@@ -251,11 +252,28 @@ public class ArgentAdNetwork extends Agent {
 		 * The advertiser is willing to pay the AdNetwork at most 1$ CPM,
 		 * therefore the total number of impressions may be treated as a reserve
 		 * (upper bound) price for the auction.
+		 * 
+		 * Old Code:
+		 * long cmpimps = com.getReachImps();
+		 * long cmpBidMillis = random.nextInt((int)cmpimps);
 		 */
-
-		Random random = new Random();
-		long cmpimps = com.getReachImps();
-		long cmpBidMillis = random.nextInt((int)cmpimps);
+		
+		/* 
+		 * Bid parameters for Campaign opportunity:
+		 * Rmin = 0.0001 
+		 * Rmax = 0.001
+		 * Quality € [ 0 , 1.385 ]
+		 * EffectiveBid = Quality / Bid
+		 * Constraints: 	Bid * Quality > Creach * Rmin
+		 * 					Bid / Quality < Creach * Rmax
+		 * so:	
+		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax  
+		 */
+		
+		long Creach = com.getReachImps(); 
+		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
+		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
+		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
 
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
