@@ -45,10 +45,10 @@ import edu.umich.eecs.tac.props.BankStatus;
  * Test plug-in
  * 
  */
-public class ArgentAdNetwork extends Agent {
+public class SimpleAdNetwork extends Agent {
 
 	private final Logger log = Logger
-			.getLogger(ArgentAdNetwork.class.getName());
+			.getLogger(SimpleAdNetwork.class.getName());
 
 	/*
 	 * Basic simulation information. An agent should receive the {@link
@@ -68,9 +68,6 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	private final Queue<CampaignReport> campaignReports;
 	private PublisherCatalog publisherCatalog;
-	
-	private HashMap<String, PublisherData> publishers;
-	
 	private InitialCampaignMessage initialCampaignMessage;
 	private AdNetworkDailyNotification adNetworkDailyNotification;
 
@@ -112,11 +109,6 @@ public class ArgentAdNetwork extends Agent {
 	 * The targeted service level for the user classification service
 	 */
 	private double ucsTargetLevel;
-	
-	/*
-	 * The current quality rating
-	 */
-	private double qualityRating;
 
 	/*
 	 * current day of simulation
@@ -124,8 +116,8 @@ public class ArgentAdNetwork extends Agent {
 	private int day;
 	private String[] publisherNames;
 	private CampaignData currCampaign;
-	
-	public ArgentAdNetwork() {
+
+	public SimpleAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
 	}
 
@@ -157,7 +149,7 @@ public class ArgentAdNetwork extends Agent {
 			} else if (content instanceof BankStatus) {
 				handleBankStatus((BankStatus) content);
 			} else if(content instanceof CampaignAuctionReport) {
-				handleCampaignAuctionReport((CampaignAuctionReport) content);
+				hadnleCampaignAuctionReport((CampaignAuctionReport) content);
 			} else if (content instanceof ReservePriceInfo) {
 				// ((ReservePriceInfo)content).getReservePriceType();
 			} else {
@@ -171,7 +163,7 @@ public class ArgentAdNetwork extends Agent {
 		}
 	}
 
-	private void handleCampaignAuctionReport(CampaignAuctionReport content) {
+	private void hadnleCampaignAuctionReport(CampaignAuctionReport content) {
 		// ingoring - this message is obsolete
 	}
 
@@ -198,24 +190,9 @@ public class ArgentAdNetwork extends Agent {
 		this.publisherCatalog = publisherCatalog;
 		generateAdxQuerySpace();
 		getPublishersNames();
-		this.publishers=new HashMap<>();
-		
-		for( PublisherCatalogEntry  publisherKey: publisherCatalog.getPublishers()){
-			String name = publisherKey.getPublisherName();
-			System.out.println("Add "+name+" to publishers");
-			PublisherData publisher=new PublisherData(name);
-			/*if(publisher==null){
-				System.out.println("publisher null!?");
-			}else{
-				System.out.println("publisher popularity = "+publisher.getPopularity());
-			}
-			System.out.println("publisher created : "+publisher);*/
-			publishers.put(name, publisher );
-			
-		}
-		System.out.println("Publishers initialised : "+publishers);
+
 	}
-	
+
 	/**
 	 * On day 0, a campaign (the "initial campaign") is allocated to each
 	 * competing agent. The campaign starts on day 1. The address of the
@@ -259,8 +236,7 @@ public class ArgentAdNetwork extends Agent {
 
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
-		Random random = new Random();
-		
+
 		/*
 		 * The campaign requires com.getReachImps() impressions. The competing
 		 * Ad Networks bid for the total campaign Budget (that is, the ad
@@ -268,28 +244,11 @@ public class ArgentAdNetwork extends Agent {
 		 * The advertiser is willing to pay the AdNetwork at most 1$ CPM,
 		 * therefore the total number of impressions may be treated as a reserve
 		 * (upper bound) price for the auction.
-		 * 
-		 * Old Code:
-		 * long cmpimps = com.getReachImps();
-		 * long cmpBidMillis = random.nextInt((int)cmpimps);
 		 */
-		
-		/* 
-		 * Bid parameters for Campaign opportunity:
-		 * Rmin = 0.0001 
-		 * Rmax = 0.001
-		 * Quality € [ 0 , 1.385 ]
-		 * EffectiveBid = Quality / Bid
-		 * Constraints: 	Bid * Quality > Creach * Rmin
-		 * 					Bid / Quality < Creach * Rmax
-		 * so:	
-		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax  
-		 */
-		
-		long Creach = com.getReachImps(); 
-		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
-		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
-		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+
+		Random random = new Random();
+		long cmpimps = com.getReachImps();
+		long cmpBidMillis = random.nextInt((int)cmpimps);
 
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
@@ -329,10 +288,9 @@ public class ArgentAdNetwork extends Agent {
 				+ notificationMessage.getWinner();
 
 		if ((pendingCampaign.id == adNetworkDailyNotification.getCampaignId())
-				&& (notificationMessage.getCostMillis() != 0)) { //cost!=0 only if we won it ?
+				&& (notificationMessage.getCostMillis() != 0)) {
 
 			/* add campaign to list of won campaigns */
-			System.out.println("Campaign won, notificationMessage.getCostMillis()="+notificationMessage.getCostMillis());
 			pendingCampaign.setBudget(notificationMessage.getCostMillis()/1000.0);
 			currCampaign = pendingCampaign;
 			genCampaignQueries(currCampaign);
@@ -341,14 +299,11 @@ public class ArgentAdNetwork extends Agent {
 			campaignAllocatedTo = " WON at cost (Millis)"
 					+ notificationMessage.getCostMillis();
 		}
-		
-		// save the new qR to calculate effective bid 
-		qualityRating = notificationMessage.getQualityScore();
-		
+
 		System.out.println("Day " + day + ": " + campaignAllocatedTo
 				+ ". UCS Level set to " + notificationMessage.getServiceLevel()
 				+ " at price " + notificationMessage.getPrice()
-				+ " Quality Score is: " + qualityRating);
+				+ " Quality Score is: " + notificationMessage.getQualityScore());
 	}
 
 	/**
@@ -367,7 +322,12 @@ public class ArgentAdNetwork extends Agent {
 	 * 
 	 */
 	protected void sendBidAndAds() {
+
 		bidBundle = new AdxBidBundle();
+
+		/*
+		 * 
+		 */
 
 		int dayBiddingFor = day + 1;
 
@@ -378,8 +338,9 @@ public class ArgentAdNetwork extends Agent {
 		 * Note: bidding per 1000 imps (CPM) - no more than average budget
 		 * revenue per imp
 		 */
-		double bid; 
-		
+
+		double rbid = 10.0*random.nextDouble();
+
 		/*
 		 * add bid entries w.r.t. each active campaign with remaining contracted
 		 * impressions.
@@ -387,61 +348,49 @@ public class ArgentAdNetwork extends Agent {
 		 * for now, a single entry per active campaign is added for queries of
 		 * matching target segment.
 		 */
-		for(CampaignData  camp: myCampaigns.values()){
-			System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
-			if ((dayBiddingFor >= camp.dayStart)
-					&& (dayBiddingFor <= camp.dayEnd)
-					&& (camp.impsTogo() > 0)) {
-	//TODO: suppr impsToGo ? because more impressions is best? or put impsToGo*1.1?
-				int entCount = 0;
-				for (AdxQuery query : camp.campaignQueries) {
-					//System.out.println("query = "+query);
-					//if (camp.impsTogo() - entCount > 0) {
-						/*
-						 * among matching entries with the same campaign id, the AdX
-						 * randomly chooses an entry according to the designated
-						 * weight. by setting a constant weight 1, we create a
-						 * uniform probability over active campaigns
-						 * (irrelevant because we are bidding only on one campaign)
-						 */
-						/*if (query.getDevice() == Device.pc) {
-							if (query.getAdType() == AdType.text) {
-								entCount++;
-							} else {
-								entCount += camp.videoCoef;
-							}
-						} else {
-							if (query.getAdType() == AdType.text) {
-								entCount+=camp.mobileCoef;
-							} else {
-								entCount += camp.videoCoef + camp.mobileCoef;
-							}
-	
-						}*/
-						double maxBid = camp.budget-camp.stats.getCost()/camp.impsTogo() ;//bid/1000 if we bid in single impression.
-						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
-						double minBid = publisher.getReservePriceBaseline();
-						//System.out.println("min (publisher reserve price)= "+minBid+" max (camp budget)= "+maxBid);
-						if(maxBid > minBid){ //We only bid if it worths it ?
-							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
-							bid = random.nextDouble()*(maxBid-minBid)+minBid;
 
-							//System.out.println("we bid "+bid);
-							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
-							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
+		if ((dayBiddingFor >= currCampaign.dayStart)
+				&& (dayBiddingFor <= currCampaign.dayEnd)
+				&& (currCampaign.impsTogo() > 0)) {
+
+			int entCount = 0;
+
+			for (AdxQuery query : currCampaign.campaignQueries) {
+				if (currCampaign.impsTogo() - entCount > 0) {
+					/*
+					 * among matching entries with the same campaign id, the AdX
+					 * randomly chooses an entry according to the designated
+					 * weight. by setting a constant weight 1, we create a
+					 * uniform probability over active campaigns(irrelevant because we are bidding only on one campaign)
+					 */
+					if (query.getDevice() == Device.pc) {
+						if (query.getAdType() == AdType.text) {
+							entCount++;
+						} else {
+							entCount += currCampaign.videoCoef;
 						}
-					//}
+					} else {
+						if (query.getAdType() == AdType.text) {
+							entCount+=currCampaign.mobileCoef;
+						} else {
+							entCount += currCampaign.videoCoef + currCampaign.mobileCoef;
+						}
+
+					}
+					bidBundle.addQuery(query, rbid, new Ad(null),
+							currCampaign.id, 1);
 				}
-				double impressionLimit = camp.impsTogo();
-				//changed:
-				double budgetLimit = camp.budget-camp.stats.getCost();
-				bidBundle.setCampaignDailyLimit(camp.id,
-						(int) impressionLimit, budgetLimit);
-	
-				System.out.println("Day " + day + ": Updated " + entCount
-						+ " Bid Bundle entries for Campaign id " + camp.id);
 			}
+
+			double impressionLimit = currCampaign.impsTogo();
+			double budgetLimit = currCampaign.budget;
+			bidBundle.setCampaignDailyLimit(currCampaign.id,
+					(int) impressionLimit, budgetLimit);
+
+			System.out.println("Day " + day + ": Updated " + entCount
+					+ " Bid Bundle entries for Campaign id " + currCampaign.id);
 		}
+
 		if (bidBundle != null) {
 			System.out.println("Day " + day + ": Sending BidBundle");
 			sendMessage(adxAgentAddress, bidBundle);
@@ -476,23 +425,11 @@ public class ArgentAdNetwork extends Agent {
 	 * Users and Publishers statistics: popularity and ad type orientation
 	 */
 	private void handleAdxPublisherReport(AdxPublisherReport adxPublisherReport) {
-		
 		System.out.println("Publishers Report: ");
 		for (PublisherCatalogEntry publisherKey : adxPublisherReport.keys()) {
 			AdxPublisherReportEntry entry = adxPublisherReport
 					.getEntry(publisherKey);
 			System.out.println(entry.toString());
-			
-		}
-		
-		for( PublisherCatalogEntry  publisherKey: publisherCatalog.getPublishers()){
-			AdxPublisherReportEntry entry = adxPublisherReport.getEntry(publisherKey);
-			
-			PublisherData publisher = publishers.get(entry.getPublisherName());
-			
-			publisher.setPopularity(entry.getPopularity());			
-			publisher.setAdTypeOrientation(entry.getAdTypeOrientation());
-			publisher.setReservePriceBaseline(entry.getReservePriceBaseline());
 		}
 	}
 
