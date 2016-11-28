@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -111,8 +112,12 @@ public class ArgentAdNetwork extends Agent {
 	/*
 	 * The targeted service level for the user classification service
 	 */
-	private double ucsTargetLevel;
+	private double ucsTargetLevel=0.8;
+	private double decreasingUcsBidFactor=0.95; //TODO: find best factors!
+	private double increasingUcsBidFactor=1.15;
 	
+	//Keep track of ucs bid and level obtained over the days
+	private double[][] ucsHistory= new double [Data.TGamedays][2];
 	/*
 	 * The current quality rating
 	 */
@@ -245,7 +250,15 @@ public class ArgentAdNetwork extends Agent {
 		System.out.println("Day " + day + ": Allocated campaign - " + campaignData);
 		myCampaigns.put(initialCampaignMessage.getId(), campaignData);
 	}
-
+	private int campaignsRunningNextDay(){
+		int runningNextDay=0;
+		for(Entry<Integer, CampaignData> camp :myCampaigns.entrySet()){
+			CampaignData campData= camp.getValue();
+			if(campData.dayStart<=day+1 && campData.dayEnd>=day+1)
+				runningNextDay++;
+		}
+		return runningNextDay;
+	}
 	/**
 	 * On day n ( > 0) a campaign opportunity is announced to the competing
 	 * agents. The campaign starts on day n + 2 or later and the agents may send
@@ -289,8 +302,9 @@ public class ArgentAdNetwork extends Agent {
 		long Creach = com.getReachImps(); 
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
-		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
-
+		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+		long cmpimps = com.getReachImps();
+		long cmpBidMillis = random.nextInt((int)cmpimps);
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
 		/*
@@ -300,7 +314,36 @@ public class ArgentAdNetwork extends Agent {
 
 		if (adNetworkDailyNotification != null) {
 			double ucsLevel = adNetworkDailyNotification.getServiceLevel();
-			ucsBid = 0.1 + random.nextDouble()/10.0;			
+			ucsHistory[day][1]=ucsLevel;
+
+			if(campaignsRunningNextDay()==0)
+				//We don't care about UCS level when we don't have any campaign running next day.
+				ucsBid=0;
+			else{
+				int previousNotNullBidDay=day-1;
+				//search the last time we didn't bid 0:
+				while(previousNotNullBidDay > 0){
+					if(ucsHistory[previousNotNullBidDay][0]!=0)
+						break;
+					previousNotNullBidDay--;
+				}
+				if(previousNotNullBidDay!=0){
+					
+					ucsBid=ucsHistory[previousNotNullBidDay][0];
+					
+					if(ucsHistory[previousNotNullBidDay+1][1] > ucsTargetLevel){
+						ucsBid=ucsBid*decreasingUcsBidFactor;
+					}else {
+						if(ucsHistory[previousNotNullBidDay+1][1] > ucsTargetLevel)
+							ucsBid=ucsBid*increasingUcsBidFactor;
+											
+					}
+				}else{// The first time we bid randomly:
+					
+					ucsBid = 0.1 + random.nextDouble()/10.0;
+				}
+			}
+			ucsHistory[day][0]=ucsBid;
 			System.out.println("Day " + day + ": ucs level reported: " + ucsLevel);
 		} else {
 			System.out.println("Day " + day + ": Initial ucs bid is " + ucsBid);
