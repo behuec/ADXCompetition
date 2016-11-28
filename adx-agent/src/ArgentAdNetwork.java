@@ -290,10 +290,6 @@ public class ArgentAdNetwork extends Agent {
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
 		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
-		System.out.println("New bid: " + cmpBidMillis);
-		System.out.println("Old bid: " + random.nextInt(com.getReachImps().intValue()));
-		System.out.println("Reach:   " + com.getReachImps());
-		System.out.println("UpperBound: " + upperBound);
 
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
