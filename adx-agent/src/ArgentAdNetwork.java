@@ -283,13 +283,17 @@ public class ArgentAdNetwork extends Agent {
 		 * Constraints: 	Bid * Quality > Creach * Rmin
 		 * 					Bid / Quality < Creach * Rmax
 		 * so:	
-		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax  
-		 */
+		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax 
+ 		 */
 		
-		long Creach = com.getReachImps(); 
+		long Creach = com.getReachImps() * 1000;
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
 		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+		System.out.println("New bid: " + cmpBidMillis);
+		System.out.println("Old bid: " + random.nextInt(com.getReachImps().intValue()));
+		System.out.println("Reach:   " + com.getReachImps());
+		System.out.println("UpperBound: " + upperBound);
 
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
@@ -494,6 +498,7 @@ public class ArgentAdNetwork extends Agent {
 			publisher.setAdTypeOrientation(entry.getAdTypeOrientation());
 			publisher.setReservePriceBaseline(entry.getReservePriceBaseline());
 		}
+		
 	}
 
 	/**
@@ -625,76 +630,5 @@ public class ArgentAdNetwork extends Agent {
 		campaignQueriesSet.toArray(campaignData.campaignQueries);
 		System.out.println("!!!!!!!!!!!!!!!!!!!!!!"+Arrays.toString(campaignData.campaignQueries)+"!!!!!!!!!!!!!!!!");
 		
-
 	}
-
-	private class CampaignData {
-		/* campaign attributes as set by server */
-		Long reachImps;
-		long dayStart;
-		long dayEnd;
-		Set<MarketSegment> targetSegment;
-		double videoCoef;
-		double mobileCoef;
-		int id;
-		private AdxQuery[] campaignQueries;//array of queries relvent for the campaign.
-
-		/* campaign info as reported */
-		CampaignStats stats;
-		double budget;
-
-		public CampaignData(InitialCampaignMessage icm) {
-			reachImps = icm.getReachImps();
-			dayStart = icm.getDayStart();
-			dayEnd = icm.getDayEnd();
-			targetSegment = icm.getTargetSegment();
-			videoCoef = icm.getVideoCoef();
-			mobileCoef = icm.getMobileCoef();
-			id = icm.getId();
-
-			stats = new CampaignStats(0, 0, 0);
-			budget = 0.0;
-		}
-
-		public void setBudget(double d) {
-			budget = d;
-		}
-
-		public CampaignData(CampaignOpportunityMessage com) {
-			dayStart = com.getDayStart();
-			dayEnd = com.getDayEnd();
-			id = com.getId();
-			reachImps = com.getReachImps();
-			targetSegment = com.getTargetSegment();
-			mobileCoef = com.getMobileCoef();
-			videoCoef = com.getVideoCoef();
-			stats = new CampaignStats(0, 0, 0);
-			budget = 0.0;
-		}
-
-		@Override
-		public String toString() {
-			return "Campaign ID " + id + ": " + "day " + dayStart + " to "
-					+ dayEnd + " " + targetSegment + ", reach: " + reachImps
-					+ " coefs: (v=" + videoCoef + ", m=" + mobileCoef + ")";
-		}
-
-		int impsTogo() {
-			return (int) Math.max(0, reachImps - stats.getTargetedImps());
-		}
-
-		void setStats(CampaignStats s) {
-			stats.setValues(s);
-		}
-
-		public AdxQuery[] getCampaignQueries() {
-			return campaignQueries;
-		}
-
-		public void setCampaignQueries(AdxQuery[] campaignQueries) {
-			this.campaignQueries = campaignQueries;
-		}
-
-	}
-
 }
