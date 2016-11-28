@@ -117,7 +117,7 @@ public class ArgentAdNetwork extends Agent {
 	private double increasingUcsBidFactor=1.15;
 	
 	//Keep track of ucs bid and level obtained over the days
-	private double[][] ucsHistory= new double [Data.TGamedays][2];
+	private double[][] ucsHistory= new double [Data.TGamedays+1][2];
 	/*
 	 * The current quality rating
 	 */
