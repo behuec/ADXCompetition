@@ -252,13 +252,26 @@ public class ArgentAdNetwork extends Agent {
 	}
 	private int campaignsRunningNextDay(){
 		int runningNextDay=0;
-		for(Entry<Integer, CampaignData> camp :myCampaigns.entrySet()){
+		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
 			CampaignData campData= camp.getValue();
 			if(campData.dayStart<=day+1 && campData.dayEnd>=day+1)
 				runningNextDay++;
 		}
 		return runningNextDay;
 	}
+	
+	/*
+	 * Remove expired campaigns from the active campaigns
+	 * TODO: check if the dayEnd is inclusive or not
+	 */
+	private void removeExpiredCampaings( int currentDay ){
+		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
+			CampaignData campData= camp.getValue();
+			if(campData.dayEnd > currentDay)
+				myCampaigns.remove(campData.id);
+		}
+	}
+	
 	/**
 	 * On day n ( > 0) a campaign opportunity is announced to the competing
 	 * agents. The campaign starts on day n + 2 or later and the agents may send
@@ -269,6 +282,8 @@ public class ArgentAdNetwork extends Agent {
 			CampaignOpportunityMessage com) {
 
 		day = com.getDay();
+		
+		removeExpiredCampaings(day);
 
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
