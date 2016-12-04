@@ -36,4 +36,17 @@ public class CompetitionTracker {
 		}
 	}
 	
+	/*
+	 * Calculates how many impressions the opponents need in that same segment over the specified 
+	 * period and compares it to my budget.
+	 * ex 1.0 if no competition, 0.5 if the other need as many impressions as I do and so on
+	 */
+	public double getCompetitionFactorForBudget(int startDay, int endDay, Set<MarketSegment> targetSegment, int budget){
+		int totalDemand = budget;
+		for(int i = startDay; i<= endDay; i++){
+			HashMap<Set<MarketSegment>,Integer> competitionDay = competition.get(i);
+			totalDemand += competitionDay.get(targetSegment);
+		}
+		return (double) budget / (double) totalDemand; 
+	}
 }
