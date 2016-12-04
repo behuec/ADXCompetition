@@ -267,7 +267,7 @@ public class ArgentAdNetwork extends Agent {
 	private void removeExpiredCampaings( int currentDay ){
 		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
 			CampaignData campData= camp.getValue();
-			if(campData.dayEnd > currentDay)
+			if(campData.dayEnd < currentDay)
 				myCampaigns.remove(campData.id);
 		}
 	}
