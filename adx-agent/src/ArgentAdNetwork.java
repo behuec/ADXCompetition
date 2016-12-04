@@ -471,8 +471,9 @@ public class ArgentAdNetwork extends Agent {
 						 * uniform probability over active campaigns
 						 * (irrelevant because we are bidding only on one campaign)
 						 */
-						
-						double maxBid = camp.budget-camp.stats.getCost()/camp.impsTogo() ;//bid/1000 if we bid in single impression.
+					float impToGoMillis = camp.impsTogo()/1000f;
+						System.out.println("camp budget = "+camp.budget+", stats = "+camp.stats.getCost()+" impToGo (millis)= "+impToGoMillis);
+						double maxBid = (camp.budget-camp.stats.getCost())/impToGoMillis ;//bid/1000 if we bid in single impression.
 						double entCount=0.0;
 						if (query.getDevice() == Device.pc) {
 							if (query.getAdType() == AdType.text) {
@@ -487,13 +488,14 @@ public class ArgentAdNetwork extends Agent {
 								entCount += camp.videoCoef + camp.mobileCoef;
 							}
 						}
+						System.out.println("This unique impression can bring "+entCount+ " impressions");
 						//an unique impression represent enCount effective impression, 
 						//but maybe we need less impressions than what we could get.
-						maxBid=maxBid * Math.min(entCount, camp.impsTogo());
+						maxBid=maxBid * Math.min(entCount, impToGoMillis);
 						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
 						double minBid = publisher.getReservePriceBaseline();
 						
-						//System.out.println("min (publisher reserve price)= "+minBid+" max (camp budget)= "+maxBid);
+						System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-cost)/impTogo)= "+maxBid);
 						if(maxBid > minBid){ //We only bid if it worths it ?
 							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
 							bid = random.nextDouble()*(maxBid-minBid)+minBid;
@@ -501,12 +503,13 @@ public class ArgentAdNetwork extends Agent {
 							//System.out.println("we bid "+bid);
 							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
 							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
+							System.out.println("bidADX = "+bid);
 						}
 					//}
 				}
 				double impressionLimit = camp.impsTogo();
-				//changed:
-				double budgetLimit = camp.budget-camp.stats.getCost();
+				//we want to satisfy the campaign impr to go to keep a good quality even if the budget is already gone
+				double budgetLimit = (camp.budget-camp.stats.getCost())*1.05;
 				bidBundle.setCampaignDailyLimit(camp.id,
 						(int) impressionLimit, budgetLimit);
 	
