@@ -487,8 +487,8 @@ public class ArgentAdNetwork extends Agent {
 					//}
 				}
 				double impressionLimit = camp.impsTogo();
-				//changed:
-				double budgetLimit = camp.budget-camp.stats.getCost();
+				//we want to satisfy the campaign impr to go to keep a good quality even if the budget is already gone
+				double budgetLimit = (camp.budget-camp.stats.getCost())*1.05;
 				bidBundle.setCampaignDailyLimit(camp.id,
 						(int) impressionLimit, budgetLimit);
 	
