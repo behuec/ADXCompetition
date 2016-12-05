@@ -328,7 +328,7 @@ public class ArgentAdNetwork extends Agent {
 		if(campaignsRunningNextDay()==0){
 			//We don't care about UCS level when we don't have any campaign running next day.
 			ucsBid=0;
-			System.out.println("Pas de campagnes => UCS bid=0");
+			System.out.println("No campaign => UCS bid=0");
 			if (adNetworkDailyNotification != null) {
 				double ucsLevel = adNetworkDailyNotification.getServiceLevel();
 				ucsHistory[day][1]=ucsLevel;
@@ -347,22 +347,22 @@ public class ArgentAdNetwork extends Agent {
 				if(previousNotNullBidDay < 0){ System.out.println("UCS ERROR !!!!!!!!");}
 					
 				ucsBid=ucsHistory[previousNotNullBidDay][0];
-				System.out.println("Previous not null UCS bid ="+ucsBid+" for day"+previousNotNullBidDay+1);
+				//System.out.println("Previous not null UCS bid ="+ucsBid+" for day"+previousNotNullBidDay+1);
 				
 				if(ucsHistory[previousNotNullBidDay+1][1] > ucsTargetLevel){
-					System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we decrease the bid" );
+					//System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we decrease the bid" );
 					ucsBid=ucsBid*decreasingUcsBidFactor;
 				}else {
 					if(ucsHistory[previousNotNullBidDay+1][1] < ucsTargetLevel){
-						System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we increase the bid" );
+						//System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we increase the bid" );
 
 						ucsBid=ucsBid*increasingUcsBidFactor;
 					}else{			
-						System.out.println("UCS bid level obtained on this day was = ucsTargetLevel, we keep it" );
+						//System.out.println("UCS bid level obtained on this day was = ucsTargetLevel, we keep it" );
 					}
 				}
 			}else {
-				System.out.println("daily notif was empty (we bid randomly)");
+				//System.out.println("daily notif was empty (we bid randomly)");
 				if(ucsBid==0){
 					ucsBid = 0.1 + random.nextDouble()/5.0;
 				}
@@ -455,7 +455,7 @@ public class ArgentAdNetwork extends Agent {
 			if ((dayBiddingFor >= camp.dayStart)
 					&& (dayBiddingFor <= camp.dayEnd)
 					&& (camp.impsTogo() > 0)) {			
-				System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
+				//System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
 
 	//TODO: suppr impsToGo ? because more impressions is best? or put impsToGo*1.1?
 				for (AdxQuery query : camp.campaignQueries) {
@@ -469,7 +469,7 @@ public class ArgentAdNetwork extends Agent {
 						 * (irrelevant because we are bidding only on one campaign)
 						 */
 					float impToGoMillis = camp.impsTogo()/1000f;
-						System.out.println("camp budget = "+camp.budget+", stats = "+camp.stats.getCost()+" impToGo (millis)= "+impToGoMillis);
+						//System.out.println("camp budget = "+camp.budget+", stats = "+camp.stats.getCost()+" impToGo (millis)= "+impToGoMillis);
 						double maxBid = (camp.budget-camp.stats.getCost())/impToGoMillis ;//bid/1000 if we bid in single impression.
 						double entCount=0.0;
 						if (query.getDevice() == Device.pc) {
@@ -485,14 +485,14 @@ public class ArgentAdNetwork extends Agent {
 								entCount += camp.videoCoef + camp.mobileCoef;
 							}
 						}
-						System.out.println("This unique impression can bring "+entCount+ " impressions");
+						//System.out.println("This unique impression can bring "+entCount+ " impressions");
 						//an unique impression represent enCount effective impression, 
 						//but maybe we need less impressions than what we could get.
 						maxBid=maxBid * Math.min(entCount, impToGoMillis);
 						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
 						double minBid = publisher.getReservePriceBaseline();
 						
-						System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-cost)/impTogo)= "+maxBid);
+						//System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-cost)/impTogo)= "+maxBid);
 						if(maxBid > minBid){ //We only bid if it worths it ?
 							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
 							bid = random.nextDouble()*(maxBid-minBid)+minBid;
@@ -500,7 +500,7 @@ public class ArgentAdNetwork extends Agent {
 							//System.out.println("we bid "+bid);
 							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
 							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
-							System.out.println("bidADX = "+bid);
+							//System.out.println("bidADX = "+bid);
 						}
 					//}
 				}
