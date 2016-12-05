@@ -265,11 +265,14 @@ public class ArgentAdNetwork extends Agent {
 	 * TODO: check if the dayEnd is inclusive or not
 	 */
 	private void removeExpiredCampaings( int currentDay ){
+		Map<Integer, CampaignData> updated_camp = new HashMap<Integer, CampaignData>();
 		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
+			Integer campId = camp.getKey();
 			CampaignData campData= camp.getValue();
-			if(campData.dayEnd < currentDay)
-				myCampaigns.remove(campData.id);
+			if(campData.dayEnd >= currentDay)
+				updated_camp.put(campId, campData);
 		}
+		myCampaigns = updated_camp;
 	}
 	
 	/**
