@@ -594,11 +594,10 @@ public class ArgentAdNetwork extends Agent {
 	private void handleAdNetworkReport(AdNetworkReport adnetReport) {
 
 		System.out.println("Day " + day + " : AdNetworkReport");
-		/*	for (AdNetworkKey adnetKey : adnetReport.keys()) { 
+			for (AdNetworkKey adnetKey : adnetReport.keys()) { 
 				AdNetworkReportEntry entry = adnetReport .getAdNetworkReportEntry(adnetKey);
-				System.out.println(" -: "+entry);  
+				System.out.println(entry);  
 			}
-		*/
 		 
 	}
 
