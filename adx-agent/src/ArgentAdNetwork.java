@@ -26,7 +26,9 @@ import tau.tac.adx.props.AdxQuery;
 import tau.tac.adx.props.PublisherCatalog;
 import tau.tac.adx.props.PublisherCatalogEntry;
 import tau.tac.adx.props.ReservePriceInfo;
+import tau.tac.adx.report.adn.AdNetworkKey;
 import tau.tac.adx.report.adn.AdNetworkReport;
+import tau.tac.adx.report.adn.AdNetworkReportEntry;
 import tau.tac.adx.report.adn.MarketSegment;
 import tau.tac.adx.report.demand.AdNetBidMessage;
 import tau.tac.adx.report.demand.AdNetworkDailyNotification;
@@ -129,6 +131,12 @@ public class ArgentAdNetwork extends Agent {
 	private int day;
 	private String[] publisherNames;
 	private CampaignData currCampaign;
+	
+	/*
+	 * 
+	 */
+	private CompetitionTracker internalCompetition = new CompetitionTracker();
+	private CompetitionTracker externalCompetition = new CompetitionTracker();
 	
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
@@ -242,6 +250,8 @@ public class ArgentAdNetwork extends Agent {
 		campaignData.setBudget(initialCampaignMessage.getBudgetMillis()/1000.0);
 		currCampaign = campaignData;
 		genCampaignQueries(currCampaign);
+		
+		internalCompetition.addCampaign(currCampaign);
 
 		/*
 		 * The initial campaign is already allocated to our agent so we add it
@@ -404,10 +414,15 @@ public class ArgentAdNetwork extends Agent {
 			currCampaign = pendingCampaign;
 			genCampaignQueries(currCampaign);
 			myCampaigns.put(pendingCampaign.id, pendingCampaign);
+			internalCompetition.addCampaign(pendingCampaign);
 
 			campaignAllocatedTo = " WON at cost (Millis)"
 					+ notificationMessage.getCostMillis();
+		} else {
+			externalCompetition.addCampaign(pendingCampaign);
 		}
+		externalCompetition.competitionStats("external",day);
+		internalCompetition.competitionStats("internal",day);
 		
 		// save the new qR to calculate effective bid 
 		qualityRating = notificationMessage.getQualityScore();
@@ -579,13 +594,12 @@ public class ArgentAdNetwork extends Agent {
 	private void handleAdNetworkReport(AdNetworkReport adnetReport) {
 
 		System.out.println("Day " + day + " : AdNetworkReport");
-		/*
-		 * for (AdNetworkKey adnetKey : adnetReport.keys()) {
-		 * 
-		 * double rnd = Math.random(); if (rnd > 0.95) { AdNetworkReportEntry
-		 * entry = adnetReport .getAdNetworkReportEntry(adnetKey);
-		 * System.out.println(adnetKey + " " + entry); } }
-		 */
+		/*	for (AdNetworkKey adnetKey : adnetReport.keys()) { 
+				AdNetworkReportEntry entry = adnetReport .getAdNetworkReportEntry(adnetKey);
+				System.out.println(" -: "+entry);  
+			}
+		*/
+		 
 	}
 
 	@Override

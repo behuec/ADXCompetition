@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import tau.tac.adx.report.adn.MarketSegment;
@@ -13,11 +14,13 @@ public class CompetitionTracker {
 	ArrayList<HashMap<Set<MarketSegment>,Integer>> competition;
 	
 	public CompetitionTracker(){
-		competition = new ArrayList<HashMap<Set<MarketSegment>,Integer>>(60);
+		competition = new ArrayList<HashMap<Set<MarketSegment>,Integer>>();
+		for(int i = 0; i<60; i++)
+			competition.add(new HashMap<Set<MarketSegment>, Integer>());
 	}
 	
 	public void addCampaign(CampaignData camp){
-		int duration 		= (int)( camp.dayEnd - camp.dayEnd );
+		int duration 		= (int)( camp.dayEnd - camp.dayStart );
 		int reach 			= camp.reachImps.intValue();
 		int reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed 
 		int remainder 		= reach % duration; // remainder days will be increased by one
@@ -48,5 +51,22 @@ public class CompetitionTracker {
 			totalDemand += competitionDay.get(targetSegment);
 		}
 		return (double) budget / (double) totalDemand; 
+	}
+	
+	public void updateCompetition(Set<MarketSegment> segment, int currDay, int endDay, int impressions){
+		for(int i = currDay; i <= endDay; i++){
+			
+		}
+	}
+	
+	public void competitionStats(String type, int day ){
+		for(int i = day; i<60 && i<day+3; i++){
+			HashMap<Set<MarketSegment>,Integer> info_day = competition.get(i);
+			System.out.println("\n"+type+" competition on day:"+i);
+			for(Map.Entry<Set<MarketSegment>,Integer> info : info_day.entrySet()){
+				System.out.print(" " + info.getKey() + " : " + info.getValue());
+			}
+		}
+		System.out.println();
 	}
 }
