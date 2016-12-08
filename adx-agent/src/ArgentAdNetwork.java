@@ -597,25 +597,18 @@ public class ArgentAdNetwork extends Agent {
 		for (CampaignReportKey campaignKey : campaignReport.keys()) {
 			int cmpId = campaignKey.getCampaignId();
 			CampaignStats cstats = campaignReport.getCampaignReportEntry(
-					campaignKey).getCampaignStats();
-			CampaignData camp = myCampaigns.get(cmpId);
-			if(camp==null){
-				System.out.println("We try to update a removed campaign");
-			}else{
-				camp.setStats(cstats);
-				System.out.println("Updating imp of day "+(day-1)+" :");
-				double cumulativeImps=cstats.getTargetedImps()+cstats.getOtherImps();
-				System.out.println("Updating -- day "+(day-1)+" "+cumulativeImps+":");
-
-				camp.updateImpsOnDay(day-1, cumulativeImps);
-				System.out.println("Updating done. try to add imps to the total :");
-				totImpGetYesterday+=camp.getImpsOnDay(day-1);
-				System.out.println("Update total done");
-				System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
-						+ cstats.getTargetedImps() + " tgtImps "
-						+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "
-						+ cstats.getCost());
-			}
+					campaignKey).getCampaignStats();	
+			
+			double new_impressions = cstats.getTargetedImps()+cstats.getOtherImps();
+			CampaignData temp_camp = myCampaigns.get(cmpId);
+			internalCompetition.updateCompetition(temp_camp.targetSegment, day, (int)temp_camp.dayEnd, new_impressions);
+			temp_camp.setStats(cstats);
+			temp_camp.updateImpsOnDay(day-1, new_impressions);
+			totImpGetYesterday += temp_camp.getImpsOnDay(day-1);
+			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
+					+ cstats.getTargetedImps() + " tgtImps "
+					+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "
+					+ cstats.getCost());
 		}
 	}
 
