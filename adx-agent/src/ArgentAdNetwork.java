@@ -118,8 +118,15 @@ public class ArgentAdNetwork extends Agent {
 	private double decreasingUcsBidFactor=0.95; //TODO: find best factors!
 	private double increasingUcsBidFactor=1.1;
 	
-	//Keep track of ucs bid and level obtained over the days
-	private double[][] ucsHistory= new double [Data.TGamedays+1][2];
+	//number of impressions get the previous day, over all contracts.
+	double totImpGetYesterday;
+	
+	//Keep track of ucs bid, level & price obtained over the days.
+	// example : 	ucsHistory[0][0] gives the ucs bid created day 0 but for adx auctions on day 2
+	//				ucsHistory[0][1] gives the ucs level officialy obtained on day 0 but for adx auctions on day 1
+	//				ucsHistory[0][2] gives the ucs price officialy obtained on day 0 but for adx auctions on day 1
+	//				
+	private double[][] ucsHistory= new double [Data.TGamedays+1][3];
 	/*
 	 * The current quality rating
 	 */
@@ -344,7 +351,9 @@ public class ArgentAdNetwork extends Agent {
 			System.out.println("No campaign => UCS bid=0");
 			if (adNetworkDailyNotification != null) {
 				double ucsLevel = adNetworkDailyNotification.getServiceLevel();
+				double ucsPrice = adNetworkDailyNotification.getPrice();
 				ucsHistory[day][1]=ucsLevel;
+				ucsHistory[day][2]=ucsPrice;
 			}
 		}else{
 			if (adNetworkDailyNotification != null) {
@@ -432,7 +441,31 @@ public class ArgentAdNetwork extends Agent {
 				+ " at price " + notificationMessage.getPrice()
 				+ " Quality Score is: " + qualityRating);
 	}
-
+	//update the cumulative ucs cost for each campaign according to the proportion of imps they get the last day.
+	private void splitUcsCostsBetweenCampaigns(int day){
+		double ucsCost = 0;
+		if(day>=0)
+			ucsCost = ucsHistory[day][2];
+		if(ucsCost!=0){
+			if(totImpGetYesterday!=0){ //we won some imps:
+				for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
+					CampaignData campData = campaign.getValue();
+					if(campData.dayStart <= day && campData.dayEnd >=day){
+						campData.ucsCummulativeCost +=(campData.getImpsOnDay(day)/totImpGetYesterday)*ucsCost;
+					}
+				}
+			}
+			else{ //we paid for nothing. we split the cost equally between our campaigns
+				System.out.println("UCS cost wasn't nul last day"+day+" but we didn't get any imps.");
+				for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
+					CampaignData campData = campaign.getValue();
+					if(campData.dayStart <= day && campData.dayEnd >=day){
+						campData.ucsCummulativeCost +=(campData.getImpsOnDay(day)/totImpGetYesterday)*ucsCost;
+					}
+				}
+			}
+		}		
+	}
 	/**
 	 * The SimulationStatus message received on day n indicates that the
 	 * calculation time is up and the agent is requested to send its bid bundle
@@ -450,7 +483,10 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	protected void sendBidAndAds() {
 		bidBundle = new AdxBidBundle();
-
+		
+		//update ucs cost until yesterday 
+		//(we don't know yet how to split the cost of today since we don't have the imps results before tomorrow).
+		splitUcsCostsBetweenCampaigns(day-1);
 		int dayBiddingFor = day + 1;
 
 		Random random = new Random();
@@ -470,25 +506,21 @@ public class ArgentAdNetwork extends Agent {
 		 * matching target segment.
 		 */
 		for(CampaignData  camp: myCampaigns.values()){
-			if ((dayBiddingFor >= camp.dayStart)
-					&& (dayBiddingFor <= camp.dayEnd)
-					&& (camp.impsTogo() > 0)) {			
+			if ((dayBiddingFor >= camp.dayStart) && (dayBiddingFor <= camp.dayEnd)	&& (camp.impsTogo() > 0)) {			
 				//System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
 
-	//TODO: suppr impsToGo ? because more impressions is best? or put impsToGo*1.1?
 				for (AdxQuery query : camp.campaignQueries) {
-					//System.out.println("query = "+query);
-					//if (camp.impsTogo() - entCount > 0) {
-						/*
-						 * among matching entries with the same campaign id, the AdX
-						 * randomly chooses an entry according to the designated
-						 * weight. by setting a constant weight 1, we create a
-						 * uniform probability over active campaigns
-						 * (irrelevant because we are bidding only on one campaign)
-						 */
+					/*
+					 * among matching entries with the same campaign id, the AdX
+					 * randomly chooses an entry according to the designated
+					 * weight. by setting a constant weight 1, we create a
+					 * uniform probability over active campaigns
+					 * (irrelevant because we are bidding only on one campaign)
+					 */
 					float impToGoMillis = camp.impsTogo()/1000f;
-						//System.out.println("camp budget = "+camp.budget+", stats = "+camp.stats.getCost()+" impToGo (millis)= "+impToGoMillis);
-						double maxBid = (camp.budget-camp.stats.getCost())/impToGoMillis ;//bid/1000 if we bid in single impression.
+						System.out.println("camp budget = "+camp.budget+", adxcosts = "+camp.stats.getCost()+", ucscosts = "+camp.ucsCummulativeCost+" impToGo (millis)= "+impToGoMillis);
+						
+						double maxBid = (camp.budget-camp.stats.getCost()-camp.ucsCummulativeCost)/impToGoMillis ;//bid/1000 if we bid in single impression.
 						double entCount=0.0;
 						if (query.getDevice() == Device.pc) {
 							if (query.getAdType() == AdType.text) {
@@ -510,26 +542,21 @@ public class ArgentAdNetwork extends Agent {
 						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
 						double minBid = publisher.getReservePriceBaseline();
 						
-						//System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-cost)/impTogo)= "+maxBid);
-						if(maxBid > minBid){ //We only bid if it worths it ?
+						//System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-costadx -cost ucs)/impTogo)= "+maxBid);
+						if(maxBid >= minBid){ //We only bid if it worths it 
 							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
-							bid = random.nextDouble()*(maxBid-minBid)+minBid;
-
-							//System.out.println("we bid "+bid);
-							//TODO: changer rbid en fct de si les devices, publishers et adtype sont bns pr le segment.
+							//bid = random.nextDouble()*(maxBid-minBid)+minBid;
+							bid =maxBid;
+							System.out.println("we bid "+bid);
 							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
 							//System.out.println("bidADX = "+bid);
 						}
-					//}
 				}
 				double impressionLimit = camp.impsTogo();
-				//we want to satisfy the campaign impr to go to keep a good quality even if the budget is already gone
+				//we want to satisfy the campaign imps to go to keep a good quality even if the budget is already gone
 				double budgetLimit = (camp.budget-camp.stats.getCost())*1.05;
 				bidBundle.setCampaignDailyLimit(camp.id,
 						(int) impressionLimit, budgetLimit);
-	
-				//System.out.println("Day " + day + ": Updated " + entCount
-					//	+ " Bid Bundle entries for Campaign id " + camp.id);
 			}
 		}
 		if (bidBundle != null) {
@@ -542,7 +569,7 @@ public class ArgentAdNetwork extends Agent {
 	 * Campaigns performance w.r.t. each allocated campaign
 	 */
 	private void handleCampaignReport(CampaignReport campaignReport) {
-
+		totImpGetYesterday = 0;
 		campaignReports.add(campaignReport);
 
 		/*
@@ -553,8 +580,10 @@ public class ArgentAdNetwork extends Agent {
 			int cmpId = campaignKey.getCampaignId();
 			CampaignStats cstats = campaignReport.getCampaignReportEntry(
 					campaignKey).getCampaignStats();
+			
 			myCampaigns.get(cmpId).setStats(cstats);
-
+			myCampaigns.get(cmpId).updateImpsOnDay(day-1, cstats.getTargetedImps()+cstats.getOtherImps());
+			totImpGetYesterday+=myCampaigns.get(cmpId).getImpsOnDay(day-1);
 			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
 					+ cstats.getTargetedImps() + " tgtImps "
 					+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "

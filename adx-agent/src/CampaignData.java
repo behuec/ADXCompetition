@@ -16,11 +16,13 @@ public class CampaignData {
 		double mobileCoef;
 		int id;
 		public AdxQuery[] campaignQueries;//array of queries relvent for the campaign.
-
+		double ucsCummulativeCost;
+		
 		/* campaign info as reported */
 		CampaignStats stats;
 		double budget;
-
+		double[] imprPerDay;
+				
 		public CampaignData(InitialCampaignMessage icm) {
 			reachImps = icm.getReachImps();
 			dayStart = icm.getDayStart();
@@ -32,12 +34,25 @@ public class CampaignData {
 
 			stats = new CampaignStats(0, 0, 0);
 			budget = 0.0;
+			ucsCummulativeCost=0;
+			imprPerDay = new double [(int) (dayEnd-dayStart+1)];
+			
 		}
 
 		public void setBudget(double d) {
 			budget = d;
 		}
-
+		public double getImpsOnDay(int day){
+			if(day < dayStart || day > dayEnd)
+				return 0;
+			return imprPerDay[(int) (day -dayStart)];
+		}
+		public  void updateImpsOnDay(int day, double cumulativeImps){
+			if(day < dayStart || day > dayEnd)
+				System.out.println("ERROR ! Set impression on a non existing day");
+			imprPerDay[(int) (day - dayStart)]=cumulativeImps-getImpsOnDay(day-1);
+			
+		}
 		public CampaignData(CampaignOpportunityMessage com) {
 			dayStart = com.getDayStart();
 			dayEnd = com.getDayEnd();

@@ -34,8 +34,8 @@ public class CompetitionTracker {
 			else
 				newValue = reachPerDay;
 			
-				newValue = newValue + ((remainder-- > 0) ? 1 : 0 ); // spread the remainder across the days 
-				competitionDay.put(segment, newValue);
+			newValue = newValue + ((remainder-- > 0) ? 1 : 0 ); // spread the remainder across the days 
+			competitionDay.put(segment, newValue);
 		}
 	}
 	
