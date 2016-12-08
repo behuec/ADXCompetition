@@ -580,10 +580,12 @@ public class ArgentAdNetwork extends Agent {
 			int cmpId = campaignKey.getCampaignId();
 			CampaignStats cstats = campaignReport.getCampaignReportEntry(
 					campaignKey).getCampaignStats();
-			
-			myCampaigns.get(cmpId).setStats(cstats);
-			myCampaigns.get(cmpId).updateImpsOnDay(day-1, cstats.getTargetedImps()+cstats.getOtherImps());
-			totImpGetYesterday+=myCampaigns.get(cmpId).getImpsOnDay(day-1);
+			double new_impressions = cstats.getTargetedImps()+cstats.getOtherImps();
+			CampaignData temp_camp = myCampaigns.get(cmpId);
+			internalCompetition.updateCompetition(temp_camp.targetSegment, day, (int)temp_camp.dayEnd, new_impressions);
+			temp_camp.setStats(cstats);
+			temp_camp.updateImpsOnDay(day-1, new_impressions);
+			totImpGetYesterday += temp_camp.getImpsOnDay(day-1);
 			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
 					+ cstats.getTargetedImps() + " tgtImps "
 					+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "
