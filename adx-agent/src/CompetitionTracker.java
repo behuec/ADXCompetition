@@ -11,30 +11,28 @@ public class CompetitionTracker {
 	* ForEach day of the competition (60) :
 	* 	contains a mapping ( HashMap ) of segments (Set<MarketSegment>) and impressions (Integer)
 	*/
-	ArrayList<HashMap<Set<MarketSegment>,Integer>> competition;
+	ArrayList<HashMap<Set<MarketSegment>,Double>> competition;
 	
 	public CompetitionTracker(){
-		competition = new ArrayList<HashMap<Set<MarketSegment>,Integer>>();
+		competition = new ArrayList<HashMap<Set<MarketSegment>,Double>>();
 		for(int i = 0; i<60; i++)
-			competition.add(new HashMap<Set<MarketSegment>, Integer>());
+			competition.add(new HashMap<Set<MarketSegment>, Double>());
 	}
 	
 	public void addCampaign(CampaignData camp){
 		int duration 		= (int)( camp.dayEnd - camp.dayStart );
-		int reach 			= camp.reachImps.intValue();
-		int reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed 
-		int remainder 		= reach % duration; // remainder days will be increased by one
+		double reach 		= (double) camp.reachImps.intValue();
+		double reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed 
 		Set<MarketSegment> segment = camp.targetSegment;
 		for(int i = (int)camp.dayStart; i <= camp.dayEnd; i++){
-			HashMap<Set<MarketSegment>,Integer> competitionDay = competition.get(i);
-			int newValue;
+			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
+			double newValue;
 			
 			if(competitionDay.containsKey(segment))
-				newValue = competitionDay.get(segment).intValue() + reachPerDay;
+				newValue = competitionDay.get(segment) + reachPerDay;
 			else
 				newValue = reachPerDay;
 			
-			newValue = newValue + ((remainder-- > 0) ? 1 : 0 ); // spread the remainder across the days 
 			competitionDay.put(segment, newValue);
 		}
 	}
@@ -47,29 +45,28 @@ public class CompetitionTracker {
 	public double getCompetitionFactorForBudget(int startDay, int endDay, Set<MarketSegment> targetSegment, int budget){
 		int totalDemand = budget;
 		for(int i = startDay; i<= endDay; i++){
-			HashMap<Set<MarketSegment>,Integer> competitionDay = competition.get(i);
+			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
 			totalDemand += competitionDay.get(targetSegment);
 		}
 		return (double) budget / (double) totalDemand; 
 	}
 	
-	public void updateCompetition(Set<MarketSegment> segment, int currDay, int endDay, int impressions){
+	public void updateCompetition(Set<MarketSegment> segment, int currDay, int endDay, double impressions){
 		int duration = (endDay - currDay);
-		int chunk = impressions / duration;
-		int remainder = impressions % duration;
+		double chunk = impressions / duration;
 		
 		for(int i = currDay; i <= endDay; i++){
-			HashMap<Set<MarketSegment>,Integer> info_day = competition.get(i);
-			int old_value = info_day.get(segment);
-			info_day.put(segment, old_value - chunk - ( remainder-- > 0 ? 1 : 0 ));
+			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
+			double old_value = info_day.get(segment);
+			info_day.put(segment, old_value - chunk);
 		}
 	}
 	
 	public void competitionStats(String type, int day ){
 		for(int i = day; i<60 && i<day+3; i++){
-			HashMap<Set<MarketSegment>,Integer> info_day = competition.get(i);
+			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
 			System.out.println("\n"+type+" competition on day:"+i);
-			for(Map.Entry<Set<MarketSegment>,Integer> info : info_day.entrySet()){
+			for(Map.Entry<Set<MarketSegment>,Double> info : info_day.entrySet()){
 				System.out.print(" " + info.getKey() + " : " + info.getValue());
 			}
 		}
