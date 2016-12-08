@@ -54,8 +54,14 @@ public class CompetitionTracker {
 	}
 	
 	public void updateCompetition(Set<MarketSegment> segment, int currDay, int endDay, int impressions){
+		int duration = (endDay - currDay);
+		int chunk = impressions / duration;
+		int remainder = impressions % duration;
+		
 		for(int i = currDay; i <= endDay; i++){
-			
+			HashMap<Set<MarketSegment>,Integer> info_day = competition.get(i);
+			int old_value = info_day.get(segment);
+			info_day.put(segment, old_value - chunk - ( remainder-- > 0 ? 1 : 0 ));
 		}
 	}
 	
