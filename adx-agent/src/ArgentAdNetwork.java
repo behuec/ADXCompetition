@@ -441,17 +441,31 @@ public class ArgentAdNetwork extends Agent {
 				+ " at price " + notificationMessage.getPrice()
 				+ " Quality Score is: " + qualityRating);
 	}
+	private void printtab(){
+		System.out.println(" [");
+
+		for(int i=0; i<=60; i++){
+			System.out.println(" ucsHistory["+i+"][2]="+ucsHistory[i][2]);
+		}
+		System.out.println(" ]");
+	}
 	//update the cumulative ucs cost for each campaign according to the proportion of imps they get the last day.
 	private void splitUcsCostsBetweenCampaigns(int day){
 		double ucsCost = 0;
 		if(day>=0)
 			ucsCost = ucsHistory[day][2];
+		System.out.println(" Day "+day);
+		printtab();
 		if(ucsCost!=0){
 			if(totImpGetYesterday!=0){ //we won some imps:
+				System.out.println("----UCS price was not nul yesterday and we get imps-----");
 				for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
 					CampaignData campData = campaign.getValue();
 					if(campData.dayStart <= day && campData.dayEnd >=day){
-						campData.ucsCummulativeCost +=(campData.getImpsOnDay(day)/totImpGetYesterday)*ucsCost;
+						System.out.println(" imp on day :"+campData.getImpsOnDay(day)+" total imps :"+totImpGetYesterday+" ucs cost :"+ucsCost);
+						double ucspart = (campData.getImpsOnDay(day)/totImpGetYesterday)*ucsCost;
+						System.out.println(" ucs part : "+ucspart+" for camp "+campData.id);
+						campData.ucsCummulativeCost +=ucspart;
 					}
 				}
 			}
@@ -464,7 +478,10 @@ public class ArgentAdNetwork extends Agent {
 					}
 				}
 			}
-		}		
+		}
+		else
+			System.out.println("----UCS price was nul yesterday ! (yesterday ="+day+")-----");
+
 	}
 	/**
 	 * The SimulationStatus message received on day n indicates that the
@@ -487,6 +504,7 @@ public class ArgentAdNetwork extends Agent {
 		//update ucs cost until yesterday 
 		//(we don't know yet how to split the cost of today since we don't have the imps results before tomorrow).
 		splitUcsCostsBetweenCampaigns(day-1);
+		
 		int dayBiddingFor = day + 1;
 
 		Random random = new Random();
@@ -580,14 +598,24 @@ public class ArgentAdNetwork extends Agent {
 			int cmpId = campaignKey.getCampaignId();
 			CampaignStats cstats = campaignReport.getCampaignReportEntry(
 					campaignKey).getCampaignStats();
-			
-			myCampaigns.get(cmpId).setStats(cstats);
-			myCampaigns.get(cmpId).updateImpsOnDay(day-1, cstats.getTargetedImps()+cstats.getOtherImps());
-			totImpGetYesterday+=myCampaigns.get(cmpId).getImpsOnDay(day-1);
-			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
-					+ cstats.getTargetedImps() + " tgtImps "
-					+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "
-					+ cstats.getCost());
+			CampaignData camp = myCampaigns.get(cmpId);
+			if(camp==null){
+				System.out.println("We try to update a removed campaign");
+			}else{
+				camp.setStats(cstats);
+				System.out.println("Updating imp of day "+(day-1)+" :");
+				double cumulativeImps=cstats.getTargetedImps()+cstats.getOtherImps();
+				System.out.println("Updating -- day "+(day-1)+" "+cumulativeImps+":");
+
+				camp.updateImpsOnDay(day-1, cumulativeImps);
+				System.out.println("Updating done. try to add imps to the total :");
+				totImpGetYesterday+=camp.getImpsOnDay(day-1);
+				System.out.println("Update total done");
+				System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
+						+ cstats.getTargetedImps() + " tgtImps "
+						+ cstats.getOtherImps() + " nonTgtImps. Cost of imps is "
+						+ cstats.getCost());
+			}
 		}
 	}
 
@@ -622,11 +650,11 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	private void handleAdNetworkReport(AdNetworkReport adnetReport) {
 
-		System.out.println("Day " + day + " : AdNetworkReport");
+		/*System.out.println("Day " + day + " : AdNetworkReport");
 			for (AdNetworkKey adnetKey : adnetReport.keys()) { 
 				AdNetworkReportEntry entry = adnetReport .getAdNetworkReportEntry(adnetKey);
 				System.out.println(entry);  
-			}
+			}*/
 		 
 	}
 

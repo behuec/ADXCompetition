@@ -35,7 +35,8 @@ public class CampaignData {
 			stats = new CampaignStats(0, 0, 0);
 			budget = 0.0;
 			ucsCummulativeCost=0;
-			imprPerDay = new double [(int) (dayEnd-dayStart+1)];
+			int size=(int) (dayEnd-dayStart+1);
+			imprPerDay = new double [size];
 			
 		}
 
@@ -44,14 +45,16 @@ public class CampaignData {
 		}
 		public double getImpsOnDay(int day){
 			if(day < dayStart || day > dayEnd)
-				return 0;
-			return imprPerDay[(int) (day -dayStart)];
+				return 0.0;
+			int index=(int) (day-dayStart);
+			return imprPerDay[index];
 		}
 		public  void updateImpsOnDay(int day, double cumulativeImps){
 			if(day < dayStart || day > dayEnd)
 				System.out.println("ERROR ! Set impression on a non existing day");
-			imprPerDay[(int) (day - dayStart)]=cumulativeImps-getImpsOnDay(day-1);
-			
+			double lastDayImps= getImpsOnDay(day-1);
+			int index=(int) (day-dayStart);
+			imprPerDay[index]=cumulativeImps-lastDayImps;
 		}
 		public CampaignData(CampaignOpportunityMessage com) {
 			dayStart = com.getDayStart();
@@ -63,6 +66,10 @@ public class CampaignData {
 			videoCoef = com.getVideoCoef();
 			stats = new CampaignStats(0, 0, 0);
 			budget = 0.0;
+			
+			ucsCummulativeCost=0;
+			int size=(int) (dayEnd-dayStart+1);
+			imprPerDay = new double [size];
 		}
 
 		@Override
