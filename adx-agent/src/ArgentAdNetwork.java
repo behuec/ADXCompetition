@@ -347,7 +347,7 @@ public class ArgentAdNetwork extends Agent {
 		//double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
 		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
 		
-		long campaignLenght = pendingCampaign.campaignLenght;
+		long campaignLenght = pendingCampaign.campaignLength;
 		double segmentSize  = pendingCampaign.segmentSize;
 		double reachFactor  = pendingCampaign.reachFactor;
 		
@@ -361,7 +361,7 @@ public class ArgentAdNetwork extends Agent {
 		 * Adjust ucs bid s.t. target level is achieved. Note: The bid for the
 		 * user classification service is piggybacked
 		 */
-		
+
 		if(campaignsRunningNextNextDay()==0 && pendingCampaign.campaignLength != Data.CCampaignL1){
 			//We don't care about UCS level when we don't have any campaign running next day.
 			ucsBid=0;

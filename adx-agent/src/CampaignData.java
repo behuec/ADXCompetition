@@ -23,7 +23,7 @@ public class CampaignData {
 		double budget;
 		double[] imprPerDay;
 		
-		long campaignLenght;
+		long campaignLength;
 		double segmentSize;
 		double reachFactor;
 				
@@ -42,9 +42,9 @@ public class CampaignData {
 			int size=(int) (dayEnd-dayStart+1);
 			imprPerDay = new double [size];
 			
-			campaignLenght = dayEnd - dayStart + 1;
+			campaignLength = dayEnd - dayStart + 1;
 			segmentSize  = Population.getSizeSegment(targetSegment);
-			reachFactor  = reachImps / (segmentSize*campaignLenght);
+			reachFactor  = reachImps / (segmentSize*campaignLength);
 		}
 		
 		public CampaignData(CampaignOpportunityMessage com) {
@@ -62,9 +62,9 @@ public class CampaignData {
 			int size=(int) (dayEnd-dayStart+1);
 			imprPerDay = new double [size];
 			
-			campaignLenght = dayEnd - dayStart + 1;
+			campaignLength = dayEnd - dayStart + 1;
 			segmentSize  = Population.getSizeSegment(targetSegment);
-			reachFactor  = reachImps / (segmentSize*campaignLenght);
+			reachFactor  = reachImps / (segmentSize*campaignLength);
 		}
 		
 		public void setBudget(double d) {
