@@ -148,7 +148,6 @@ public class ArgentAdNetwork extends Agent {
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
 		population=new Population();
-		population.compute_segments();
 	}
 
 	@Override
@@ -336,11 +335,25 @@ public class ArgentAdNetwork extends Agent {
 		 * so:	
 		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax 
  		 */
-		
+		System.out.println("Computing:");
 		long Creach = com.getReachImps() * 1000;
+		System.out.println("Creach: "+Creach);
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
-		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+		System.out.println("lowerBound: "+lowerBound);
+		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+		long cmpBidMillis = (long)lowerBound;
+		
+		//double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		
+		long campaignLenght = pendingCampaign.campaignLenght;
+		double segmentSize  = pendingCampaign.segmentSize;
+		double reachFactor  = pendingCampaign.reachFactor;
+		
+		System.out.println("CL:   "+campaignLenght);
+		System.out.println("|CS|: "+segmentSize);
+		System.out.println("CRL:  "+reachFactor);
 		
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
