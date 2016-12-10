@@ -41,13 +41,15 @@ public class Data {
 		
 		//Users possible ages
 		public enum Age {
-			age18_24, age25_34, age35_44, age45_54 , age55_64, age65_plus
+			Age_18_24, Age_25_34, Age_35_44, Age_45_54 , Age_55_64, Age_65_plus
 		}
 		
 		public enum Income {
 			income0_30, income30_60, income60_100, income100_plus
 		}
-		
+		public enum Gender {
+			male, female
+		}
 		// Effective Reach Ration used to compute
 		public double ERR( double eta){
 			return 0.4895 * (Math.atan(4.08577*eta-3.08577) + 1.2574); 

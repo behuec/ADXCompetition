@@ -52,11 +52,11 @@ public class PublisherData extends AdxPublisherReportEntry{
 		this.setMobileOrientation(mobileOrientation);
 		
 		Map<Data.Age, Double> ageOrientation= new HashMap<Data.Age, Double>(); 
-		ageOrientation.put(Data.Age.age18_24, agesPop[0]);
-		ageOrientation.put(Data.Age.age25_34, agesPop[1]);
-		ageOrientation.put(Data.Age.age35_44, agesPop[2]);
-		ageOrientation.put(Data.Age.age45_54, agesPop[3]);
-		ageOrientation.put(Data.Age.age55_64, agesPop[4]);
+		ageOrientation.put(Data.Age.Age_18_24, agesPop[0]);
+		ageOrientation.put(Data.Age.Age_25_34, agesPop[1]);
+		ageOrientation.put(Data.Age.Age_35_44, agesPop[2]);
+		ageOrientation.put(Data.Age.Age_45_54, agesPop[3]);
+		ageOrientation.put(Data.Age.Age_55_64, agesPop[4]);
 		//ageOrientation.put(Data.Age.age65_plus, ...);
 		this.ageOrientation=ageOrientation;
 		

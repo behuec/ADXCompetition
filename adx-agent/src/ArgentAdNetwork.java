@@ -131,7 +131,7 @@ public class ArgentAdNetwork extends Agent {
 	 * The current quality rating
 	 */
 	private double qualityRating;
-
+	private Population population;
 	/*
 	 * current day of simulation
 	 */
@@ -147,6 +147,8 @@ public class ArgentAdNetwork extends Agent {
 	
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
+		population=new Population();
+		population.compute_segments();
 	}
 
 	@Override
@@ -556,7 +558,11 @@ public class ArgentAdNetwork extends Agent {
 							//bid = random.nextDouble()*(maxBid-minBid)+minBid;
 							bid =maxBid;
 							System.out.println("we bid "+bid);
+							if(camp.dayEnd==dayBiddingFor){ //urgent
+								bidBundle.addQuery(query, bid, new Ad(null), camp.id, 2);
+							}
 							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
+
 							//System.out.println("bidADX = "+bid);
 						}
 				}
