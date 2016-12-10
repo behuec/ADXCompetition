@@ -116,7 +116,7 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	private double ucsTargetLevel=0.81;
 	private double decreasingUcsBidFactor=0.95; //TODO: find best factors!
-	private double increasingUcsBidFactor=1.1;
+	private double increasingUcsBidFactor=1.2;
 	
 	//number of impressions get the previous day, over all contracts.
 	double totImpGetYesterday;
@@ -248,7 +248,8 @@ public class ArgentAdNetwork extends Agent {
 		System.out.println(campaignMessage.toString());
 
 		day = 0;
-
+		ucsHistory[1][1]=Data.ZUCSAccuracy;
+		ucsHistory[1][2]=0.0; //ucs furnished at no cost
 		initialCampaignMessage = campaignMessage;
 		demandAgentAddress = campaignMessage.getDemandAgentAddress();
 		adxAgentAddress = campaignMessage.getAdxAgentAddress();
@@ -278,7 +279,7 @@ public class ArgentAdNetwork extends Agent {
 	}
 	
 	/*
-	 * Remove expired campaigns from the active campaigns
+	 * Remove expired campaigns from the winning campaigns
 	 * TODO: check if the dayEnd is inclusive or not
 	 */
 	private void removeExpiredCampaings( int currentDay ){
@@ -345,53 +346,46 @@ public class ArgentAdNetwork extends Agent {
 		 * Adjust ucs bid s.t. target level is achieved. Note: The bid for the
 		 * user classification service is piggybacked
 		 */
+		
 		if(campaignsRunningNextDay()==0){
 			//We don't care about UCS level when we don't have any campaign running next day.
 			ucsBid=0;
 			System.out.println("No campaign => UCS bid=0");
-			if (adNetworkDailyNotification != null) {
-				double ucsLevel = adNetworkDailyNotification.getServiceLevel();
-				double ucsPrice = adNetworkDailyNotification.getPrice();
-				ucsHistory[day][1]=ucsLevel;
-				ucsHistory[day][2]=ucsPrice;
-			}
+			
 		}else{
-			if (adNetworkDailyNotification != null) {
-				double ucsLevel = adNetworkDailyNotification.getServiceLevel();
-				ucsHistory[day][1]=ucsLevel;
-				System.out.println("Day " + day + ": ucs level reported: " + ucsLevel);
+			if (adNetworkDailyNotification != null) {				
 	
 				int previousNotNullBidDay=day-1;
 				//search the last time we didn't bid 0:
-				while(ucsHistory[previousNotNullBidDay][0]==0){
+				while(previousNotNullBidDay>=0 && ucsHistory[previousNotNullBidDay][0]==0){
 					previousNotNullBidDay--;
 				}
-				if(previousNotNullBidDay < 0){ System.out.println("UCS ERROR !!!!!!!!");}
-					
+
 				ucsBid=ucsHistory[previousNotNullBidDay][0];
-				//System.out.println("Previous not null UCS bid ="+ucsBid+" for day"+previousNotNullBidDay+1);
+				System.out.println("[UCS] Previous not null UCS bid ="+ucsBid+" on day"+(previousNotNullBidDay));
 				
 				if(ucsHistory[previousNotNullBidDay+1][1] > ucsTargetLevel){
-					//System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we decrease the bid" );
+					System.out.println("[UCS] UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we decrease the bid" );
 					ucsBid=ucsBid*decreasingUcsBidFactor;
 				}else {
 					if(ucsHistory[previousNotNullBidDay+1][1] < ucsTargetLevel){
-						//System.out.println("UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we increase the bid" );
+						System.out.println("[UCS] UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we increase the bid" );
 
 						ucsBid=ucsBid*increasingUcsBidFactor;
 					}else{			
 						//System.out.println("UCS bid level obtained on this day was = ucsTargetLevel, we keep it" );
+						ucsBid= ucsHistory[previousNotNullBidDay][0] ;
 					}
 				}
 			}else {
-				//System.out.println("daily notif was empty (we bid randomly)");
+				System.out.println("[Warning] daily notif was empty (ucs bid set randomly)");
 				if(ucsBid==0){
 					ucsBid = 0.1 + random.nextDouble()/5.0;
 				}
 			}
 		}
 		ucsHistory[day][0]=ucsBid;
-		System.out.println("Day " + day + ": UCS bid: " + ucsBid);
+		System.out.println("[UCS] Day " + day + ": UCS bid: " + ucsBid);
 		/* Note: Campaign bid is in millis */
 		AdNetBidMessage bids = new AdNetBidMessage(ucsBid, pendingCampaign.id, cmpBidMillis);
 		sendMessage(demandAgentAddress, bids);
@@ -440,12 +434,16 @@ public class ArgentAdNetwork extends Agent {
 				+ ". UCS Level set to " + notificationMessage.getServiceLevel()
 				+ " at price " + notificationMessage.getPrice()
 				+ " Quality Score is: " + qualityRating);
+		ucsHistory[day+1][1]=notificationMessage.getServiceLevel();
+		ucsHistory[day+1][2]=notificationMessage.getPrice();
 	}
-	private void printtab(){
-		System.out.println(" [");
-
-		for(int i=0; i<=60; i++){
-			System.out.println(" ucsHistory["+i+"][2]="+ucsHistory[i][2]);
+	private void printUcsHistory(){
+		System.out.println(" [	UCS History: ");
+		//we print only day-5 to day+2 (in order to avoid spamming terminal).
+		int start = Math.max(0, day-5);
+		int end = Math.min(Data.TGamedays, day+2);
+		for(int i=start; i<=end; i++){
+			System.out.println(" day "+i+": ucsbid ="+ucsHistory[i][0]+", ucslevel="+ucsHistory[i][1]+" ucsprice="+ucsHistory[i][2]);
 		}
 		System.out.println(" ]");
 	}
@@ -454,11 +452,11 @@ public class ArgentAdNetwork extends Agent {
 		double ucsCost = 0;
 		if(day>=0)
 			ucsCost = ucsHistory[day][2];
-		System.out.println(" Day "+day);
-		printtab();
+		printUcsHistory();
 		if(ucsCost!=0){
 			if(totImpGetYesterday!=0){ //we won some imps:
-				System.out.println("----UCS price was not nul yesterday and we get imps-----");
+				System.out.println("----UCS price was not nul yesterday and we get imps :" +
+						" we split the ucs cost among the running campaigns-----");
 				for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
 					CampaignData campData = campaign.getValue();
 					if(campData.dayStart <= day && campData.dayEnd >=day){
@@ -470,7 +468,7 @@ public class ArgentAdNetwork extends Agent {
 				}
 			}
 			else{ //we paid for nothing. we split the cost equally between our campaigns
-				System.out.println("UCS cost wasn't nul last day"+day+" but we didn't get any imps.");
+				System.out.println("UCS cost wasn't nul yesterday ("+day+") but we didn't get any imps.");
 				for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
 					CampaignData campData = campaign.getValue();
 					if(campData.dayStart <= day && campData.dayEnd >=day){
@@ -501,28 +499,21 @@ public class ArgentAdNetwork extends Agent {
 	protected void sendBidAndAds() {
 		bidBundle = new AdxBidBundle();
 		
-		//update ucs cost until yesterday 
-		//(we don't know yet how to split the cost of today since we don't have the imps results before tomorrow).
+		/*
+		/*	update ucs cost until yesterday 
+		/*	(we don't know yet how to split the cost of today since we don't have the imps results before tomorrow).
+		*/
 		splitUcsCostsBetweenCampaigns(day-1);
 		
-		int dayBiddingFor = day + 1;
-
-		Random random = new Random();
-
-		/* A random bid, fixed for all queries of the campaign */
-		/*
+		/* 
 		 * Note: bidding per 1000 imps (CPM) - no more than average budget
 		 * revenue per imp
 		 */
 		double bid; 
+		int dayBiddingFor = day + 1;
+		//Random random = new Random();		
 		
-		/*
-		 * add bid entries w.r.t. each active campaign with remaining contracted
-		 * impressions.
-		 * 
-		 * for now, a single entry per active campaign is added for queries of
-		 * matching target segment.
-		 */
+		/* add bid entries w.r.t. each active campaign with remaining contracted impressions.*/
 		for(CampaignData  camp: myCampaigns.values()){
 			if ((dayBiddingFor >= camp.dayStart) && (dayBiddingFor <= camp.dayEnd)	&& (camp.impsTogo() > 0)) {			
 				//System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
@@ -533,7 +524,6 @@ public class ArgentAdNetwork extends Agent {
 					 * randomly chooses an entry according to the designated
 					 * weight. by setting a constant weight 1, we create a
 					 * uniform probability over active campaigns
-					 * (irrelevant because we are bidding only on one campaign)
 					 */
 					float impToGoMillis = camp.impsTogo()/1000f;
 						System.out.println("camp budget = "+camp.budget+", adxcosts = "+camp.stats.getCost()+", ucscosts = "+camp.ucsCummulativeCost+" impToGo (millis)= "+impToGoMillis);
