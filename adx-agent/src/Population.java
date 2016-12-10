@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -7,8 +6,8 @@ import tau.tac.adx.report.adn.MarketSegment;
 
 public class Population {
 	
-	HashMap<Set<MarketSegment>, Double> segments = new HashMap<>();
-	public void compute_segments(){
+	static HashMap<Set<MarketSegment>, Double> segments = new HashMap<>();
+	public Population(){
 		
 		/* 3-PARTITIONS :*/
 		segments.put(MarketSegment.compundMarketSegment3(MarketSegment.FEMALE, MarketSegment.OLD, MarketSegment.HIGH_INCOME), 407.0);
@@ -43,7 +42,7 @@ public class Population {
 		segments.put(MarketSegment.compundMarketSegment1(MarketSegment.YOUNG), 4589.0);
 		
 	}
-	public double getSizeSegment(Set<MarketSegment> targetedSegment){
+	public static double getSizeSegment(Set<MarketSegment> targetedSegment){
 		return segments.get(targetedSegment);
 	}
 	
