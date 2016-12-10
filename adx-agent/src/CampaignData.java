@@ -22,6 +22,10 @@ public class CampaignData {
 		CampaignStats stats;
 		double budget;
 		double[] imprPerDay;
+		
+		long campaignLenght;
+		double segmentSize;
+		double reachFactor;
 				
 		public CampaignData(InitialCampaignMessage icm) {
 			reachImps = icm.getReachImps();
@@ -38,6 +42,29 @@ public class CampaignData {
 			int size=(int) (dayEnd-dayStart+1);
 			imprPerDay = new double [size];
 			
+			campaignLenght = dayEnd - dayStart + 1;
+			segmentSize  = Population.getSizeSegment(targetSegment);
+			reachFactor  = reachImps / (segmentSize*campaignLenght);
+		}
+		
+		public CampaignData(CampaignOpportunityMessage com) {
+			dayStart = com.getDayStart();
+			dayEnd = com.getDayEnd();
+			id = com.getId();
+			reachImps = com.getReachImps();
+			targetSegment = com.getTargetSegment();
+			mobileCoef = com.getMobileCoef();
+			videoCoef = com.getVideoCoef();
+			stats = new CampaignStats(0, 0, 0);
+			budget = 0.0;
+			
+			ucsCummulativeCost=0;
+			int size=(int) (dayEnd-dayStart+1);
+			imprPerDay = new double [size];
+			
+			campaignLenght = dayEnd - dayStart + 1;
+			segmentSize  = Population.getSizeSegment(targetSegment);
+			reachFactor  = reachImps / (segmentSize*campaignLenght);
 		}
 
 		public void setBudget(double d) {
@@ -55,21 +82,6 @@ public class CampaignData {
 			double lastDayImps= getImpsOnDay(day-1);
 			int index=(int) (day-dayStart);
 			imprPerDay[index]=cumulativeImps-lastDayImps;
-		}
-		public CampaignData(CampaignOpportunityMessage com) {
-			dayStart = com.getDayStart();
-			dayEnd = com.getDayEnd();
-			id = com.getId();
-			reachImps = com.getReachImps();
-			targetSegment = com.getTargetSegment();
-			mobileCoef = com.getMobileCoef();
-			videoCoef = com.getVideoCoef();
-			stats = new CampaignStats(0, 0, 0);
-			budget = 0.0;
-			
-			ucsCummulativeCost=0;
-			int size=(int) (dayEnd-dayStart+1);
-			imprPerDay = new double [size];
 		}
 
 		@Override
