@@ -43,6 +43,9 @@ public class Population {
 		segments.put(MarketSegment.compundMarketSegment1(MarketSegment.YOUNG), 4589.0);
 		
 	}
+	public double getSizeSegment(Set<MarketSegment> targetedSegment){
+		return segments.get(targetedSegment);
+	}
 	
 		
 }
