@@ -39,9 +39,10 @@ public class CompetitionTracker {
 	
 	public double getCompetition(int startDay, int endDay, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
-		for(int i = startDay; i<= endDay; i++){
+		for(int i = startDay; i <= endDay; i++){
 			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
-			totalDemand += competitionDay.get(targetSegment);
+			if( competitionDay.get(targetSegment) != null )
+				totalDemand += competitionDay.get(targetSegment);
 		}
 		return totalDemand; 
 	}
@@ -53,7 +54,10 @@ public class CompetitionTracker {
 		for(int i = currDay; i <= endDay; i++){
 			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
 			double old_value = info_day.get(segment);
-			info_day.put(segment, old_value - chunk);
+			if(old_value - chunk > 0)
+				info_day.put(segment, old_value - chunk);
+			else
+				info_day.remove(segment);
 		}
 	}
 	
