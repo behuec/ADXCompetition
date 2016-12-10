@@ -8,7 +8,7 @@ import tau.tac.adx.report.adn.MarketSegment;
 public class Population {
 	
 	HashMap<Set<MarketSegment>, Double> segments = new HashMap<>();
-	public void compute_segments(){
+	public Population(){
 		
 		/* 3-PARTITIONS :*/
 		segments.put(MarketSegment.compundMarketSegment3(MarketSegment.FEMALE, MarketSegment.OLD, MarketSegment.HIGH_INCOME), 407.0);

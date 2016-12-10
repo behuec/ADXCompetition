@@ -116,7 +116,7 @@ public class ArgentAdNetwork extends Agent {
 	 */
 	private double ucsTargetLevel=0.81;
 	private double decreasingUcsBidFactor=0.95; //TODO: find best factors!
-	private double increasingUcsBidFactor=1.2;
+	private double increasingUcsBidFactor=1.1;
 	
 	//number of impressions get the previous day, over all contracts.
 	double totImpGetYesterday;
@@ -148,7 +148,6 @@ public class ArgentAdNetwork extends Agent {
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
 		population=new Population();
-		population.compute_segments();
 	}
 
 	@Override
@@ -270,11 +269,11 @@ public class ArgentAdNetwork extends Agent {
 		System.out.println("Day " + day + ": Allocated campaign - " + campaignData);
 		myCampaigns.put(initialCampaignMessage.getId(), campaignData);
 	}
-	private int campaignsRunningNextDay(){
+	private int campaignsRunningNextNextDay(){
 		int runningNextDay=0;
 		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
 			CampaignData campData= camp.getValue();
-			if(campData.dayStart<=day+1 && campData.dayEnd>=day+1)
+			if(campData.dayStart<=day+2 && campData.dayEnd>=day+2)
 				runningNextDay++;
 		}
 		return runningNextDay;
@@ -340,7 +339,20 @@ public class ArgentAdNetwork extends Agent {
 		long Creach = com.getReachImps() * 1000;
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
-		long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
+		
+		long cmpBidMillis = (long)(0.1*(upperBound - lowerBound) + lowerBound); //random.nextDouble()
+		
+		//double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		
+		long campaignLenght = pendingCampaign.dayEnd - pendingCampaign.dayStart;
+		double segmentSize  = population.getSizeSegment(pendingCampaign.targetSegment);
+		System.out.println("segmentsize : ");
+		double reachFactor  = Creach / (segmentSize*campaignLenght);
+		
+		System.out.println("CL:   "+campaignLenght);
+		System.out.println("|CS|: "+segmentSize);
+		System.out.println("CRL:  "+reachFactor);
 		
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
@@ -349,7 +361,7 @@ public class ArgentAdNetwork extends Agent {
 		 * user classification service is piggybacked
 		 */
 		
-		if(campaignsRunningNextDay()==0){
+		if(campaignsRunningNextNextDay()==0 && pendingCampaign.campaignLength != Data.CCampaignL1){
 			//We don't care about UCS level when we don't have any campaign running next day.
 			ucsBid=0;
 			System.out.println("No campaign => UCS bid=0");

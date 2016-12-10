@@ -39,7 +39,7 @@ public class CampaignData {
 			imprPerDay = new double [size];
 			
 		}
-
+		
 		public void setBudget(double d) {
 			budget = d;
 		}
