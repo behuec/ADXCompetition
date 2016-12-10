@@ -66,7 +66,7 @@ public class CampaignData {
 			segmentSize  = Population.getSizeSegment(targetSegment);
 			reachFactor  = reachImps / (segmentSize*campaignLenght);
 		}
-
+		
 		public void setBudget(double d) {
 			budget = d;
 		}
