@@ -294,6 +294,18 @@ public class ArgentAdNetwork extends Agent {
 		}
 		myCampaigns = updated_camp;
 	}
+	/*
+	public boolean isReachable(CampaignData newCamp){
+		for (long i = newCamp.dayStart; i <= newCamp.dayEnd; i++){
+			double compet = getCompetition(i, newCamp.targetSegment);
+			if(compet <0){
+				System.out.println("at least one day is difficult!");
+				return false;
+			}
+		}
+		return true;
+	}
+	*/
 	
 	public int campaignRunningYesterday(long day){
 		int numberOfCampaignRunning=0;
@@ -322,12 +334,15 @@ public class ArgentAdNetwork extends Agent {
 		
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
-		Boolean reachable = internalCompetition.isReachable(pendingCampaign);
+		
+		/*
+		Boolean reachable = internalCompetition.isReachable(pendingCampaign); 
 		Boolean reachable2 = externalCompetition.isReachable(pendingCampaign);
 		System.out.println("-------CAMPAIGN RECHABLE ?---------");
-		
 		System.out.println("-------Internally : "+reachable+"---------");
 		System.out.println("-------Externally: "+reachable2+"---------");
+		*/
+		
 		Random random = new Random();
 		
 		/*
@@ -354,6 +369,7 @@ public class ArgentAdNetwork extends Agent {
 		 * so:	
 		 * 		( Creach * Rmin ) / Quality < Bid < Quality * Creach * Rmax 
  		 */
+		
 		System.out.println("Computing:");
 		long Creach = com.getReachImps() * 1000;
 		System.out.println("Creach: "+Creach);
@@ -363,16 +379,23 @@ public class ArgentAdNetwork extends Agent {
 		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
 		long cmpBidMillis = (long)lowerBound + 1;
 		
-		double intComp = internalCompetition.getCompetition(day, pendingCampaign.targetSegment);
-		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		double intComp = 0.0;
+		double extComp = 0.0;
+		for(long i = pendingCampaign.dayStart; i <= pendingCampaign.dayEnd; i++){
+			intComp += internalCompetition.getCompetition(i, pendingCampaign.targetSegment);
+			extComp += externalCompetition.getCompetition(i, pendingCampaign.targetSegment);
+		}
+		double totComp = (intComp + extComp) / pendingCampaign.campaignLength;
 		
+		if(totComp > 1.0){
+			// We cannot satisfy it
+		} else {
+			// Check reachability
+		}
+
 		long campaignLenght = pendingCampaign.campaignLength;
 		double segmentSize  = pendingCampaign.segmentSize;
 		double reachFactor  = pendingCampaign.reachFactor;
-		
-		System.out.println("CL:   "+campaignLenght);
-		System.out.println("|CS|: "+segmentSize);
-		System.out.println("CRL:  "+reachFactor);
 		
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
