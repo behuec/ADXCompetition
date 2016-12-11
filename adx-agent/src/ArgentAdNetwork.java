@@ -398,11 +398,8 @@ public class ArgentAdNetwork extends Agent {
 				// Is going to hinder our campaigns, let's try to balance that with a huge budget;
 				cmpBidMillis =  (long) upperBound - 1;
 			} else {
-				// the campaign is reachable and doesn't hinder our existing campaigns, go for it
-				if(campaignLenght == 5)
-					cmpBidMillis *= 1.1;
-				if(campaignLenght == 10)
-					cmpBidMillis *= 1.2;
+				double coefficient = 0.1 * random.nextDouble();
+				cmpBidMillis *= (1.0 + coefficient);
 			}
 		}
 		
