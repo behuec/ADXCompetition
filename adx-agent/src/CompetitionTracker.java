@@ -25,12 +25,12 @@ public class CompetitionTracker {
 		double reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed
 		double targetSize   = Population.getSizeSegment(camp.targetSegment); // get size of the targeted segment
 		// compute the list of triplets that constitute the target
-		ArrayList<Set<MarketSegment>> segments = Population.getSection(camp.targetSegment); 
+		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(camp.targetSegment); 
 		
 		for(int i = (int)camp.dayStart; i <= camp.dayEnd; i++){
 			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
 			double dailyReachPerTriplet;
-			for(Set<MarketSegment> triplet : segments){
+			for(Set<MarketSegment> triplet : triplets){
 				double tripletPercentage = Population.getSizeSegment(triplet) / targetSize;
 				if(competitionDay.containsKey(triplet))
 					dailyReachPerTriplet = competitionDay.get(triplet) + reachPerDay*tripletPercentage;
@@ -49,31 +49,38 @@ public class CompetitionTracker {
 	// return the competition as the percentage of the segment still available
 	public double getCompetition(int startDay, int endDay, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
-		double avgSegment = Population.getSizeSegment(targetSegment);
+		double segmentSize = Population.getSizeSegment(targetSegment);
+		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(targetSegment);
 		for(int i = startDay; i <= endDay; i++){
 			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
+			for(Set<MarketSegment> triplet : triplets)
 			if( competitionDay.get(targetSegment) != null )
 				totalDemand += competitionDay.get(targetSegment);
 		}
 		// if totalDemand = 0 			: returns 1  | There is no competition
 		// if totalDemand = avgSegment	: returns 0  | The segment is full
 		// if totalDemand > avgSegment	: returns -x | Abs(x) is the percentage of overshoot
-		return ( avgSegment - totalDemand ) / avgSegment; 
+		return ( segmentSize - totalDemand ) / segmentSize; 
 	}
 	
-	public void updateCompetition(Set<MarketSegment> segment, int yesterDay, int endDay, double impressions){
+	public void updateCompetition(Set<MarketSegment> segment, int yesterDay, int endDay, double impressionsAchievedYesterday){
 		int duration = (endDay - yesterDay ); // Check remaning duration
 		// Compute the progress as the difference between the linear estimation for today and the actual number that we got.
 		// Update the tracker by distributing the remainder over the rest of the campaign ( if we overshoot progress < 0 )
-		double progress = (competition.get(yesterDay).get(segment) - impressions) / duration; 
-		
+		double segmentSize = Population.getSizeSegment(segment);
+		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(segment);
 		for(int i = yesterDay + 1 ; i <= endDay; i++){
 			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
-			double old_value = info_day.get(segment);
-			if(old_value + progress > 0)
-				info_day.put(segment, old_value + progress);
-			else 
-				info_day.remove(segment);
+			for(Set<MarketSegment> triplet : triplets){
+				double tripletPercent = Population.getSizeSegment(triplet) / segmentSize;
+				double tripletProgress = impressionsAchievedYesterday * tripletPercent;
+				double progress = (competition.get(yesterDay).get(triplet) - tripletProgress) / duration;
+				double old_value = info_day.get(triplet);
+				if(old_value + progress > 0)
+					info_day.put(triplet, old_value + progress);
+				else 
+					info_day.remove(triplet);
+			}
 		}
 	}
 	
