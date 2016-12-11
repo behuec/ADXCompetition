@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import tau.tac.adx.report.adn.MarketSegment;
@@ -139,8 +140,22 @@ public class Population {
 		YL.add(fyl); YL.add(myl);
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.YOUNG,  MarketSegment.LOW_INCOME), YL);
 		
+		//compute the avg imp per day per segment:
+		computeAVGimps();
 	}
-	
+	//compute the average single impressions each day on each segment 
+	private static void computeAVGimps(){
+		double avg = Data.NContinueMax * Math.pow(Data.PContinue, Data.NContinueMax);
+		for(int i =1; i<Data.NContinueMax-1; i++){
+			avg+= i* Math.pow(Data.PContinue, i) * (1-Data.PContinue);
+		}
+		for (Entry<Set<MarketSegment>, Double> seg : ((HashMap<Set<MarketSegment>, Double>) segments.clone()).entrySet()){
+			//geometric law ("probability of reject") + each user is going at least once on website.
+			segments.put(seg.getKey(), seg.getValue()*avg+seg.getValue());
+		}
+		
+	}
+
 	public static double getSizeSegment(Set<MarketSegment> targetedSegment){
 		return segments.get(targetedSegment);
 	}
