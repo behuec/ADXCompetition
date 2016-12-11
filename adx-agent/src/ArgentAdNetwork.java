@@ -306,9 +306,15 @@ public class ArgentAdNetwork extends Agent {
 		day = com.getDay();
 		
 		removeExpiredCampaings(day);
-
+		
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
+		Boolean reachable = internalCompetition.isReachable(pendingCampaign);
+		Boolean reachable2 = externalCompetition.isReachable(pendingCampaign);
+		System.out.println("-------CAMPAIGN RECHABLE ?---------");
+		
+		System.out.println("-------Internally : "+reachable+"---------");
+		System.out.println("-------Externally: "+reachable2+"---------");
 		Random random = new Random();
 		
 		/*

@@ -41,19 +41,24 @@ public class CompetitionTracker {
 			}
 		}
 	}
-	
-	public double computeCompetition(int startDay, int endDay, Set<MarketSegment> targetSegment){
-		return 0.0;
+	public boolean isReachable(CampaignData newCamp){
+		for (long i = newCamp.dayStart; i <= newCamp.dayEnd; i++){
+			double compet = getCompetition(i, newCamp.targetSegment);
+			if(compet <0){
+				System.out.println("at least one day is difficult!");
+				return false;
+			}
+		}
+		return true;
 	}
-	
 	// return the competition as the percentage of the segment still available
-	public double getCompetition(int day, Set<MarketSegment> targetSegment){
+	public double getCompetition(long day, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
 		double segmentSize = Population.getSizeSegment(targetSegment);
 		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(targetSegment);
-		HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(day);
+		HashMap<Set<MarketSegment>,Double> competitionDay = competition.get((int) day);
 		for(Set<MarketSegment> triplet : triplets)
-			if( competitionDay.get(targetSegment) != null )
+			if( competitionDay.get(triplet) != null )
 			totalDemand += competitionDay.get(triplet);
 	
 		// if totalDemand = 0 			: returns 1  | There is no competition
@@ -84,7 +89,7 @@ public class CompetitionTracker {
 	}
 	
 	public void competitionStats(String type, int day ){
-		for(int i = day; i<60 && i<day+3; i++){
+		for(int i = day; i<Data.TGamedays && i<day+3; i++){
 			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
 			System.out.println("\n"+type+" competition on day:"+i);
 			for(Map.Entry<Set<MarketSegment>,Double> info : info_day.entrySet()){
