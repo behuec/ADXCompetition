@@ -47,16 +47,15 @@ public class CompetitionTracker {
 	}
 	
 	// return the competition as the percentage of the segment still available
-	public double getCompetition(int startDay, int endDay, Set<MarketSegment> targetSegment){
+	public double getCompetition(int day, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
 		double segmentSize = Population.getSizeSegment(targetSegment);
 		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(targetSegment);
-		for(int i = startDay; i <= endDay; i++){
-			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
-			for(Set<MarketSegment> triplet : triplets)
+		HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(day);
+		for(Set<MarketSegment> triplet : triplets)
 			if( competitionDay.get(targetSegment) != null )
-				totalDemand += competitionDay.get(targetSegment);
-		}
+			totalDemand += competitionDay.get(triplet);
+	
 		// if totalDemand = 0 			: returns 1  | There is no competition
 		// if totalDemand = avgSegment	: returns 0  | The segment is full
 		// if totalDemand > avgSegment	: returns -x | Abs(x) is the percentage of overshoot

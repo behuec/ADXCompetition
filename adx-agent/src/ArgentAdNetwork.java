@@ -344,7 +344,7 @@ public class ArgentAdNetwork extends Agent {
 		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
 		long cmpBidMillis = (long)lowerBound + 1;
 		
-		double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		double intComp = internalCompetition.getCompetition(day, pendingCampaign.targetSegment);
 		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
 		
 		long campaignLenght = pendingCampaign.campaignLength;
