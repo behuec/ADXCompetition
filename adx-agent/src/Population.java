@@ -122,9 +122,9 @@ public class Population {
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.FEMALE, MarketSegment.YOUNG), FY);
 		MY.add(myl); MY.add(myh);
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.MALE, MarketSegment.YOUNG), MY);
-		FH.add(fyh); FY.add(foh);
+		FH.add(fyh); FH.add(foh);
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.FEMALE, MarketSegment.HIGH_INCOME),  FH);
-		MH.add(myh); FY.add(moh);
+		MH.add(myh); MH.add(moh);
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.MALE, MarketSegment.HIGH_INCOME), MH);
 		FL.add(fyl); FL.add(fol);
 		sets.put(MarketSegment.compundMarketSegment2(MarketSegment.FEMALE,  MarketSegment.LOW_INCOME), FL);
