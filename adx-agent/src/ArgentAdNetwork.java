@@ -294,18 +294,6 @@ public class ArgentAdNetwork extends Agent {
 		}
 		myCampaigns = updated_camp;
 	}
-	/*
-	public boolean isReachable(CampaignData newCamp){
-		for (long i = newCamp.dayStart; i <= newCamp.dayEnd; i++){
-			double compet = getCompetition(i, newCamp.targetSegment);
-			if(compet <0){
-				System.out.println("at least one day is difficult!");
-				return false;
-			}
-		}
-		return true;
-	}
-	*/
 	
 	public int campaignRunningYesterday(long day){
 		int numberOfCampaignRunning=0;
@@ -317,6 +305,7 @@ public class ArgentAdNetwork extends Agent {
 		}
 		return numberOfCampaignRunning;
 	}
+	
 	/**
 	 * On day n ( > 0) a campaign opportunity is announced to the competing
 	 * agents. The campaign starts on day n + 2 or later and the agents may send
@@ -381,21 +370,41 @@ public class ArgentAdNetwork extends Agent {
 		
 		double intComp = 0.0;
 		double extComp = 0.0;
-		for(long i = pendingCampaign.dayStart; i <= pendingCampaign.dayEnd; i++){
-			intComp += internalCompetition.getCompetition(i, pendingCampaign.targetSegment);
-			extComp += externalCompetition.getCompetition(i, pendingCampaign.targetSegment);
-		}
-		double totComp = (intComp + extComp) / pendingCampaign.campaignLength;
-		
-		if(totComp > 1.0){
-			// We cannot satisfy it
-		} else {
-			// Check reachability
-		}
-
+		double intCompDay = 0.0;
+		double extCompDay = 0.0;
+		boolean hotspot = false;
 		long campaignLenght = pendingCampaign.campaignLength;
 		double segmentSize  = pendingCampaign.segmentSize;
 		double reachFactor  = pendingCampaign.reachFactor;
+		for(long i = pendingCampaign.dayStart; i <= pendingCampaign.dayEnd; i++){
+			intCompDay = internalCompetition.getCompetition(i, pendingCampaign.targetSegment);
+			extCompDay = externalCompetition.getCompetition(i, pendingCampaign.targetSegment);
+			if(intCompDay > 1.0)
+				hotspot = true;
+			intComp += intCompDay;
+			extComp += extCompDay;
+		}
+ 
+		double totComp = ( intComp + extComp + reachFactor ) / pendingCampaign.campaignLength;
+		
+		if(totComp > 1.0){
+			// There is too much competition in the long run, don't bid
+			cmpBidMillis = 0;
+		} 
+		else 
+		{
+			// Check reachability for each day
+			if(hotspot){
+				// Is going to hinder our campaigns, let's try to balance that with a huge budget;
+				cmpBidMillis =  (long) upperBound - 1;
+			} else {
+				// the campaign is reachable and doesn't hinder our existing campaigns, go for it
+				if(campaignLenght == 5)
+					cmpBidMillis *= 1.1;
+				if(campaignLenght == 10)
+					cmpBidMillis *= 1.2;
+			}
+		}
 		
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
