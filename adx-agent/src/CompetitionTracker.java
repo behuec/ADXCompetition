@@ -41,16 +41,7 @@ public class CompetitionTracker {
 			}
 		}
 	}
-	public boolean isReachable(CampaignData newCamp){
-		for (long i = newCamp.dayStart; i <= newCamp.dayEnd; i++){
-			double compet = getCompetition(i, newCamp.targetSegment);
-			if(compet <0){
-				System.out.println("at least one day is difficult!");
-				return false;
-			}
-		}
-		return true;
-	}
+	
 	// return the competition as the percentage of the segment still available
 	public double getCompetition(long day, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
@@ -61,10 +52,10 @@ public class CompetitionTracker {
 			if( competitionDay.get(triplet) != null )
 			totalDemand += competitionDay.get(triplet);
 	
-		// if totalDemand = 0 			: returns 1  | There is no competition
-		// if totalDemand = avgSegment	: returns 0  | The segment is full
-		// if totalDemand > avgSegment	: returns -x | Abs(x) is the percentage of overshoot
-		return ( segmentSize - totalDemand ) / segmentSize; 
+		// if totalDemand = 0 			: returns 0  | The segment can be used freely
+		// if totalDemand = segmentSize	: returns 1  | The segment is full
+		// if totalDemand > segmentSize : returns x  | Where (1-x) is the percentage of overshoot
+		return totalDemand / segmentSize; 
 	}
 	
 	public void updateCompetition(Set<MarketSegment> segment, int yesterDay, int endDay, double impressionsAchievedYesterday){
