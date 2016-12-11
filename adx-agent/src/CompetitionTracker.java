@@ -15,7 +15,7 @@ public class CompetitionTracker {
 	
 	public CompetitionTracker(){
 		competition = new ArrayList<HashMap<Set<MarketSegment>,Double>>();
-		for(int i = 0; i<60; i++)
+		for(int i = 0; i < Data.TGamedays; i++)
 			competition.add(new HashMap<Set<MarketSegment>, Double>());
 	}
 	
@@ -29,15 +29,15 @@ public class CompetitionTracker {
 		
 		for(int i = (int)camp.dayStart; i <= camp.dayEnd; i++){
 			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
-			double newValue;
-			for(Set<MarketSegment> segment : segments){
-				double tripletPercentage = Population.getSizeSegment(segment) / targetSize;
-				if(competitionDay.containsKey(segment))
-					newValue = competitionDay.get(segment) + reachPerDay*tripletPercentage;
+			double dailyReachPerTriplet;
+			for(Set<MarketSegment> triplet : segments){
+				double tripletPercentage = Population.getSizeSegment(triplet) / targetSize;
+				if(competitionDay.containsKey(triplet))
+					dailyReachPerTriplet = competitionDay.get(triplet) + reachPerDay*tripletPercentage;
 				else
-					newValue = reachPerDay*tripletPercentage;
+					dailyReachPerTriplet = reachPerDay*tripletPercentage;
 				
-				competitionDay.put(segment, newValue);
+				competitionDay.put(triplet, dailyReachPerTriplet);
 			}
 		}
 	}
@@ -61,13 +61,13 @@ public class CompetitionTracker {
 		return ( avgSegment - totalDemand ) / avgSegment; 
 	}
 	
-	public void updateCompetition(Set<MarketSegment> segment, int currDay, int endDay, double impressions){
-		int duration = (endDay - currDay); // Check remaning duration
+	public void updateCompetition(Set<MarketSegment> segment, int yesterDay, int endDay, double impressions){
+		int duration = (endDay - yesterDay ); // Check remaning duration
 		// Compute the progress as the difference between the linear estimation for today and the actual number that we got.
 		// Update the tracker by distributing the remainder over the rest of the campaign ( if we overshoot progress < 0 )
-		double progress = (competition.get(currDay).get(segment) - impressions) / duration; 
+		double progress = (competition.get(yesterDay).get(segment) - impressions) / duration; 
 		
-		for(int i = currDay + 1; i <= endDay; i++){
+		for(int i = yesterDay + 1 ; i <= endDay; i++){
 			HashMap<Set<MarketSegment>,Double> info_day = competition.get(i);
 			double old_value = info_day.get(segment);
 			if(old_value + progress > 0)

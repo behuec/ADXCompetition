@@ -342,9 +342,9 @@ public class ArgentAdNetwork extends Agent {
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
 		System.out.println("lowerBound: "+lowerBound);
 		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
-		long cmpBidMillis = (long)lowerBound;
+		long cmpBidMillis = (long)lowerBound + 1;
 		
-		//double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
+		double intComp = internalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
 		//double extComp = externalCompetition.getCompetition(day,(int)pendingCampaign.dayEnd, pendingCampaign.targetSegment);
 		
 		long campaignLenght = pendingCampaign.campaignLength;
@@ -612,7 +612,7 @@ public class ArgentAdNetwork extends Agent {
 			CampaignData temp_camp = myCampaigns.get(cmpId);
 			internalCompetition.updateCompetition(temp_camp.targetSegment, day, (int)temp_camp.dayEnd, new_impressions);
 			temp_camp.setStats(cstats);
-			temp_camp.updateImpsOnDay(day-1, new_impressions);
+			temp_camp.updateImpsOnDay(day-1, temp_camp.getImpsOnDay(day-1));
 			totImpGetYesterday += temp_camp.getImpsOnDay(day-1);
 			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
 					+ cstats.getTargetedImps() + " tgtImps "
