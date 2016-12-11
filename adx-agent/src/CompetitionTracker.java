@@ -22,17 +22,23 @@ public class CompetitionTracker {
 	public void addCampaign(CampaignData camp){
 		int duration 		= (int)( camp.dayEnd - camp.dayStart );
 		double reach 		= (double) camp.reachImps.intValue();
-		double reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed 
-		Set<MarketSegment> segment = camp.targetSegment;
+		double reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed
+		double targetSize   = Population.getSizeSegment(camp.targetSegment); // get size of the targeted segment
+		// compute the list of triplets that constitute the target
+		ArrayList<Set<MarketSegment>> segments = Population.getSection(camp.targetSegment); 
+		
 		for(int i = (int)camp.dayStart; i <= camp.dayEnd; i++){
 			HashMap<Set<MarketSegment>,Double> competitionDay = competition.get(i);
 			double newValue;
-			if(competitionDay.containsKey(segment))
-				newValue = competitionDay.get(segment) + reachPerDay;
-			else
-				newValue = reachPerDay;
-			
-			competitionDay.put(segment, newValue);
+			for(Set<MarketSegment> segment : segments){
+				double tripletPercentage = Population.getSizeSegment(segment) / targetSize;
+				if(competitionDay.containsKey(segment))
+					newValue = competitionDay.get(segment) + reachPerDay*tripletPercentage;
+				else
+					newValue = reachPerDay*tripletPercentage;
+				
+				competitionDay.put(segment, newValue);
+			}
 		}
 	}
 	
