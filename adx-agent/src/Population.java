@@ -145,7 +145,7 @@ public class Population {
 		return segments.get(targetedSegment);
 	}
 	
-	public static ArrayList<Set<MarketSegment>> getSection(Set<MarketSegment> targetedSegment){
+	public static ArrayList<Set<MarketSegment>> getTriplets(Set<MarketSegment> targetedSegment){
 		return sets.get(targetedSegment);
 	}
 		
