@@ -13,6 +13,8 @@ public class Population {
 	static HashSet<MarketSegment> age = new HashSet<MarketSegment>();
 	static HashSet<MarketSegment> sex = new HashSet<MarketSegment>();
 	static HashSet<MarketSegment> income = new HashSet<MarketSegment>();
+	
+	//Each partition (1-partition, 2-partition or 3-partition) is equivalent to a set of 3-partitions
 	static HashMap<Set<MarketSegment>,ArrayList<Set<MarketSegment>>> sets = new HashMap<Set<MarketSegment>,ArrayList<Set<MarketSegment>>>();
 	
 	public Population(){

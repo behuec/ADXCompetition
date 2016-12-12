@@ -115,7 +115,7 @@ public class ArgentAdNetwork extends Agent {
 	 * The targeted service level for the user classification service
 	 */
 	private double ucsTargetLevel=0.81;
-	private double decreasingUcsBidFactor=0.95; //TODO: find best factors!
+	private double decreasingUcsBidFactor=0.95;
 	private double increasingUcsBidFactor=1.1;
 	
 	//number of impressions get the previous day, over all contracts.
@@ -228,12 +228,6 @@ public class ArgentAdNetwork extends Agent {
 			String name = publisherKey.getPublisherName();
 			System.out.println("Add "+name+" to publishers");
 			PublisherData publisher=new PublisherData(name);
-			/*if(publisher==null){
-				System.out.println("publisher null!?");
-			}else{
-				System.out.println("publisher popularity = "+publisher.getPopularity());
-			}
-			System.out.println("publisher created : "+publisher);*/
 			publishers.put(name, publisher );
 			
 		}
@@ -253,7 +247,9 @@ public class ArgentAdNetwork extends Agent {
 
 		day = 0;
 		ucsHistory[1][1]=Data.ZUCSAccuracy;
-		ucsHistory[1][2]=0.0; //ucs furnished at no cost
+		ucsHistory[1][2]=0.0; //ucs given at no cost
+		ucsHistory[1][3] = 1; //1 initial campaign assigned to each agent.
+		
 		initialCampaignMessage = campaignMessage;
 		demandAgentAddress = campaignMessage.getDemandAgentAddress();
 		adxAgentAddress = campaignMessage.getAdxAgentAddress();
@@ -272,6 +268,25 @@ public class ArgentAdNetwork extends Agent {
 		System.out.println("Day " + day + ": Allocated campaign - " + campaignData);
 		myCampaigns.put(initialCampaignMessage.getId(), campaignData);
 	}
+	/**
+	 * 
+	 * @param day yesterday
+	 * @return number of campaign yesterday (among the won ones)
+	 */
+	public int campaignRunningYesterday(long day){
+		int numberOfCampaignRunning=0;
+		for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
+			CampaignData campData = campaign.getValue();
+			if(campData.dayStart <= day && campData.dayEnd >=day){
+				numberOfCampaignRunning++;
+			}
+		}
+		return numberOfCampaignRunning;
+	}
+	/**
+	 * 
+	 * @return the number of campaign (won) running on day n+2
+	 */
 	private int campaignsRunningNextNextDay(){
 		int runningNextDay=0;
 		for(Entry<Integer, CampaignData> camp : myCampaigns.entrySet()){
@@ -284,7 +299,6 @@ public class ArgentAdNetwork extends Agent {
 	
 	/*
 	 * Remove expired campaigns from the winning campaigns
-	 * TODO: check if the dayEnd is inclusive or not
 	 */
 	private void removeExpiredCampaings( int currentDay ){
 		Map<Integer, CampaignData> updated_camp = new HashMap<Integer, CampaignData>();
@@ -297,16 +311,6 @@ public class ArgentAdNetwork extends Agent {
 		myCampaigns = updated_camp;
 	}
 	
-	public int campaignRunningYesterday(long day){
-		int numberOfCampaignRunning=0;
-		for (Entry<Integer, CampaignData> campaign : myCampaigns.entrySet()){
-			CampaignData campData = campaign.getValue();
-			if(campData.dayStart <= day && campData.dayEnd >=day){
-				numberOfCampaignRunning++;
-			}
-		}
-		return numberOfCampaignRunning;
-	}
 	
 	/**
 	 * On day n ( > 0) a campaign opportunity is announced to the competing
@@ -325,15 +329,7 @@ public class ArgentAdNetwork extends Agent {
 		
 		pendingCampaign = new CampaignData(com);
 		System.out.println("Day " + day + ": Campaign opportunity - " + pendingCampaign);
-		
-		/*
-		Boolean reachable = internalCompetition.isReachable(pendingCampaign); 
-		Boolean reachable2 = externalCompetition.isReachable(pendingCampaign);
-		System.out.println("-------CAMPAIGN RECHABLE ?---------");
-		System.out.println("-------Internally : "+reachable+"---------");
-		System.out.println("-------Externally: "+reachable2+"---------");
-		*/
-		
+				
 		Random random = new Random();
 		
 		/*
@@ -344,9 +340,6 @@ public class ArgentAdNetwork extends Agent {
 		 * therefore the total number of impressions may be treated as a reserve
 		 * (upper bound) price for the auction.
 		 * 
-		 * Old Code:
-		 * long cmpimps = com.getReachImps();
-		 * long cmpBidMillis = random.nextInt((int)cmpimps);
 		 */
 		
 		/* 
@@ -367,7 +360,6 @@ public class ArgentAdNetwork extends Agent {
 		double upperBound = qualityRating * Creach * Data.RCampaignMax ;
 		double lowerBound = ( Creach * Data.RCampaignMin ) / qualityRating;
 		System.out.println("lowerBound: "+lowerBound);
-		//long cmpBidMillis = (long)(random.nextDouble()*(upperBound - lowerBound) + lowerBound);
 		long cmpBidMillis = (long)lowerBound + 1;
 		
 		double intComp = 0.0;
@@ -404,7 +396,7 @@ public class ArgentAdNetwork extends Agent {
 				cmpBidMillis *= (1.0 + coefficient);
 			}
 		}
-		
+		// It's been 10 days that we didn't get any campaign, we try to get one by bidding the min.
 		if(unluckyStreak >= 10){
 			cmpBidMillis = (long)lowerBound + 1;
 		}
@@ -425,28 +417,36 @@ public class ArgentAdNetwork extends Agent {
 			if (adNetworkDailyNotification != null) {				
 	
 				int previousNotNullBidDay=day-1;
+				
 				//search the last time we didn't bid 0:
 				while(previousNotNullBidDay>=0 && ucsHistory[previousNotNullBidDay][0]==0){
 					previousNotNullBidDay--;
 				}
-
+				
+				// By default takes the previous ucs bid not nul.
+				// Then increases or descreases it according to the ucs level get:
 				ucsBid=ucsHistory[previousNotNullBidDay][0];
 				System.out.println("[UCS] Previous not null UCS bid ="+ucsBid+" on day"+(previousNotNullBidDay));
 				
 				if(ucsHistory[previousNotNullBidDay+1][1] > ucsTargetLevel){
+					
 					System.out.println("[UCS] UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we decrease the bid" );
 					ucsBid=ucsBid*decreasingUcsBidFactor;
+					
 				}else {
+					
 					if(ucsHistory[previousNotNullBidDay+1][1] < ucsTargetLevel){
+						
 						System.out.println("[UCS] UCS bid level obtained on this day was ="+ucsHistory[previousNotNullBidDay+1][1]+" we increase the bid" );
-
 						ucsBid=ucsBid*increasingUcsBidFactor;
+						
 					}else{			
 						//System.out.println("UCS bid level obtained on this day was = ucsTargetLevel, we keep it" );
 						ucsBid= ucsHistory[previousNotNullBidDay][0] ;
 					}
 				}
 			}else {
+				
 				System.out.println("[Warning] daily notif was empty (ucs bid set randomly)");
 				if(ucsBid==0){
 					ucsBid = 0.1 + random.nextDouble()/5.0;
@@ -455,6 +455,7 @@ public class ArgentAdNetwork extends Agent {
 		}
 		ucsHistory[day][0]=ucsBid;
 		System.out.println("[UCS] Day " + day + ": UCS bid: " + ucsBid);
+		
 		/* Note: Campaign bid is in millis */
 		AdNetBidMessage bids = new AdNetBidMessage(ucsBid, pendingCampaign.id, cmpBidMillis);
 		sendMessage(demandAgentAddress, bids);
@@ -488,12 +489,15 @@ public class ArgentAdNetwork extends Agent {
 			myCampaigns.put(pendingCampaign.id, pendingCampaign);
 			internalCompetition.addCampaign(pendingCampaign);
 			
+			//Reset the number of days without wonning campaigns.
 			unluckyStreak = 0;
 
 			campaignAllocatedTo = " WON at cost (Millis)"
 					+ notificationMessage.getCostMillis();
 		} else {
+			//increase the number of days without any campaign.
 			unluckyStreak++;
+			//if not win by us, the campaign is probably won by an opponent.
 			externalCompetition.addCampaign(pendingCampaign);
 		}
 		externalCompetition.competitionStats("external",day);
@@ -510,6 +514,10 @@ public class ArgentAdNetwork extends Agent {
 		ucsHistory[day+1][1]=notificationMessage.getServiceLevel();
 		ucsHistory[day+1][2]=notificationMessage.getPrice();
 	}
+	/**
+	 *  Print UCS history around today (up to 5 days before and 2 days after).
+	 *  For each chosen day : UCS bid, price, level and the number of running campaigns
+	 */
 	private void printUcsHistory(){
 		System.out.println(" [	UCS History: ");
 		//we print only day-5 to day+2 (in order to avoid spamming terminal).
@@ -520,7 +528,11 @@ public class ArgentAdNetwork extends Agent {
 		}
 		System.out.println(" ]");
 	}
-	//update the cumulative ucs cost for each campaign according to the proportion of imps they get the last day.
+	
+	/**
+	 * update the cumulative ucs cost for each campaign according to the proportion of imps they get the last day.
+	 * @param day
+	 */
 	private void splitUcsCostsBetweenCampaigns(int day){
 		double ucsCost = 0;
 		if(day>=0)
@@ -552,9 +564,6 @@ public class ArgentAdNetwork extends Agent {
 				}
 			}
 		}
-		else
-			System.out.println("----UCS price was nul yesterday ! (yesterday ="+day+")-----");
-
 	}
 	/**
 	 * The SimulationStatus message received on day n indicates that the
@@ -569,7 +578,7 @@ public class ArgentAdNetwork extends Agent {
 	}
 
 	/**
-	 * 
+	 *  Send ADX bid.
 	 */
 	protected void sendBidAndAds() {
 		bidBundle = new AdxBidBundle();
@@ -586,13 +595,10 @@ public class ArgentAdNetwork extends Agent {
 		 */
 		double bid; 
 		int dayBiddingFor = day + 1;
-		//Random random = new Random();		
 		
 		/* add bid entries w.r.t. each active campaign with remaining contracted impressions.*/
 		for(CampaignData  camp: myCampaigns.values()){
 			if ((dayBiddingFor >= camp.dayStart) && (dayBiddingFor <= camp.dayEnd)	&& (camp.impsTogo() > 0)) {			
-				//System.out.println("Traitement Campagne "+camp.id+ "Commençant le "+camp.dayStart+" et finissant le "+camp.dayEnd+"dont l'impTogo="+camp.impsTogo());
-
 				for (AdxQuery query : camp.campaignQueries) {
 					/*
 					 * among matching entries with the same campaign id, the AdX
@@ -601,43 +607,38 @@ public class ArgentAdNetwork extends Agent {
 					 * uniform probability over active campaigns
 					 */
 					float impToGoMillis = camp.impsTogo()/1000f;
-						//System.out.println("camp budget = "+camp.budget+", adxcosts = "+camp.stats.getCost()+", ucscosts = "+camp.ucsCummulativeCost+" impToGo (millis)= "+impToGoMillis);
-						
-						double maxBid = (camp.budget-camp.stats.getCost()-camp.ucsCummulativeCost)/impToGoMillis ;//bid/1000 if we bid in single impression.
-						double entCount=0.0;
-						if (query.getDevice() == Device.pc) {
-							if (query.getAdType() == AdType.text) {
-								entCount++;
-							} else {
-								entCount += camp.videoCoef;
-							}
+					
+					// The upperbound is the budget - costs and divide equally between impressions.
+					double maxBid = (camp.budget-camp.stats.getCost()-camp.ucsCummulativeCost)/impToGoMillis ;
+					
+					//Counts the number of imps we could get thanks to coefficients
+					double entCount=0.0;
+					if (query.getDevice() == Device.pc) {
+						if (query.getAdType() == AdType.text) {
+							entCount++;
 						} else {
-							if (query.getAdType() == AdType.text) {
-								entCount+=camp.mobileCoef;
-							} else {
-								entCount += camp.videoCoef + camp.mobileCoef;
-							}
+							entCount += camp.videoCoef;
 						}
-						//System.out.println("This unique impression can bring "+entCount+ " impressions");
-						//an unique impression represent enCount effective impression, 
-						//but maybe we need less impressions than what we could get.
-						maxBid=maxBid * Math.min(entCount, impToGoMillis);
-						AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
-						double minBid = publisher.getReservePriceBaseline();
-						
-						//System.out.println("min (publisher reserve price)= "+minBid+" max ((camp budget-costadx -cost ucs)/impTogo)= "+maxBid);
-						if(maxBid >= minBid){ //We only bid if it worths it 
-							//TODO : Modify bid to get a more accurate value given the publisher.get Popularity, AdxType etc.
-							//bid = random.nextDouble()*(maxBid-minBid)+minBid;
-							bid =maxBid;
-							//System.out.println("we bid "+bid);
-							if(camp.dayEnd==dayBiddingFor){ //urgent
-								bidBundle.addQuery(query, bid, new Ad(null), camp.id, 2);
-							}
-							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
-
-							//System.out.println("bidADX = "+bid);
+					} else {
+						if (query.getAdType() == AdType.text) {
+							entCount+=camp.mobileCoef;
+						} else {
+							entCount += camp.videoCoef + camp.mobileCoef;
 						}
+					}
+					//an unique impression represent enCount effective impression, 
+					//but maybe we need less impressions than what we could get.
+					maxBid=maxBid * Math.min(entCount, impToGoMillis);
+					AdxPublisherReportEntry publisher = publishers.get(query.getPublisher());
+					
+					double minBid = publisher.getReservePriceBaseline();
+					if(maxBid >= minBid){ //We only bid if it worths it 
+						bid =maxBid;
+						if(camp.dayEnd==dayBiddingFor){ //urgent
+							bidBundle.addQuery(query, bid, new Ad(null), camp.id, 2);
+						}
+						bidBundle.addQuery(query, bid, new Ad(null), camp.id, 1);
+					}
 				}
 				double impressionLimit = camp.impsTogo();
 				//we want to satisfy the campaign imps to go to keep a good quality even if the budget is already gone
@@ -670,9 +671,11 @@ public class ArgentAdNetwork extends Agent {
 			
 			double new_impressions = cstats.getTargetedImps()+cstats.getOtherImps();
 			CampaignData temp_camp = myCampaigns.get(cmpId);
+			
 			internalCompetition.updateCompetition(temp_camp.targetSegment, day, (int)temp_camp.dayEnd, new_impressions);
 			temp_camp.setStats(cstats);
 			temp_camp.updateImpsOnDay(day-1, temp_camp.getImpsOnDay(day-1));
+			
 			totImpGetYesterday += temp_camp.getImpsOnDay(day-1);
 			System.out.println("Day " + day + ": Updating campaign " + cmpId + " stats: "
 					+ cstats.getTargetedImps() + " tgtImps "

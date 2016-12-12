@@ -15,7 +15,7 @@ public class CampaignData {
 		double videoCoef;
 		double mobileCoef;
 		int id;
-		public AdxQuery[] campaignQueries;//array of queries relvent for the campaign.
+		public AdxQuery[] campaignQueries;//array of queries relevant for the campaign.
 		double ucsCummulativeCost;
 		
 		/* campaign info as reported */
