@@ -410,7 +410,7 @@ public class ArgentAdNetwork extends Agent {
 		 * user classification service is piggybacked
 		 */
 
-		if(campaignsRunningNextNextDay()==0 && pendingCampaign.campaignLength != Data.CCampaignL1){
+		if(campaignsRunningNextNextDay()==0){
 			//We don't care about UCS level when we don't have any campaign running next day.
 			ucsBid=0;
 			System.out.println("No campaign => UCS bid=0");
