@@ -389,7 +389,7 @@ public class ArgentAdNetwork extends Agent {
 		
 		if(totComp > 1.0){
 			// There is too much competition in the long run, don't bid
-			cmpBidMillis = 0;
+			cmpBidMillis = (long) upperBound - 1;
 		} 
 		else 
 		{
