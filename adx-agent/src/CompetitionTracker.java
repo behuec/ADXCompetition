@@ -7,9 +7,9 @@ import tau.tac.adx.report.adn.MarketSegment;
 
 public class CompetitionTracker {
 	/*
-	* Ugliest data structure I've ever seen used to keep track of the competition between contracts.
+	* Data structure used to keep track of the competition between contracts.
 	* ForEach day of the competition (60) :
-	* 	contains a mapping ( HashMap ) of segments (Set<MarketSegment>) and impressions (Integer)
+	* 	contains a mapping ( HashMap ) of segments (Set<MarketSegment>) and impressions (Double)
 	*/
 	ArrayList<HashMap<Set<MarketSegment>,Double>> competition;
 	
@@ -24,6 +24,7 @@ public class CompetitionTracker {
 		double reach 		= (double) camp.reachImps.intValue();
 		double reachPerDay 	= reach / duration; // Heuristic: Assume the reach is linearly distributed
 		double targetSize   = Population.getSizeSegment(camp.targetSegment); // get size of the targeted segment
+		
 		// compute the list of triplets that constitute the target
 		ArrayList<Set<MarketSegment>> triplets = Population.getTriplets(camp.targetSegment); 
 		
@@ -42,7 +43,7 @@ public class CompetitionTracker {
 		}
 	}
 	
-	// return the competition as the percentage of the segment still available
+	// return the competition as the percentage of the segment available
 	public double getCompetition(long day, Set<MarketSegment> targetSegment){
 		double totalDemand = 0;
 		double segmentSize = Population.getSizeSegment(targetSegment);
