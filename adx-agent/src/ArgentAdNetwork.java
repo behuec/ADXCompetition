@@ -146,6 +146,8 @@ public class ArgentAdNetwork extends Agent {
 	private CompetitionTracker internalCompetition = new CompetitionTracker();
 	private CompetitionTracker externalCompetition = new CompetitionTracker();
 	
+	private int unluckyStreak = 0;
+	
 	public ArgentAdNetwork() {
 		campaignReports = new LinkedList<CampaignReport>();
 		population=new Population();
@@ -403,6 +405,10 @@ public class ArgentAdNetwork extends Agent {
 			}
 		}
 		
+		if(unluckyStreak >= 10){
+			cmpBidMillis = (long)lowerBound + 1;
+		}
+		
 		System.out.println("Day " + day + ": Campaign total budget bid (millis): " + cmpBidMillis);
 
 		/*
@@ -473,7 +479,7 @@ public class ArgentAdNetwork extends Agent {
 
 		if ((pendingCampaign.id == adNetworkDailyNotification.getCampaignId())
 				&& (notificationMessage.getCostMillis() != 0)) { //cost!=0 only if we won it ?
-
+			
 			/* add campaign to list of won campaigns */
 			System.out.println("Campaign won, notificationMessage.getCostMillis()="+notificationMessage.getCostMillis());
 			pendingCampaign.setBudget(notificationMessage.getCostMillis()/1000.0);
@@ -481,14 +487,18 @@ public class ArgentAdNetwork extends Agent {
 			genCampaignQueries(currCampaign);
 			myCampaigns.put(pendingCampaign.id, pendingCampaign);
 			internalCompetition.addCampaign(pendingCampaign);
+			
+			unluckyStreak = 0;
 
 			campaignAllocatedTo = " WON at cost (Millis)"
 					+ notificationMessage.getCostMillis();
 		} else {
+			unluckyStreak++;
 			externalCompetition.addCampaign(pendingCampaign);
 		}
 		externalCompetition.competitionStats("external",day);
 		internalCompetition.competitionStats("internal",day);
+		System.out.println("Streak: "+unluckyStreak);
 		
 		// save the new qR to calculate effective bid 
 		qualityRating = notificationMessage.getQualityScore();
